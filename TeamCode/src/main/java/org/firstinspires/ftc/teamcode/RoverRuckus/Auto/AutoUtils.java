@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.RoverRuckus.Auto;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.DriveSystems.Mecanum.RoadRunner.SampleMecanumDriveREV;
 import org.firstinspires.ftc.teamcode.Mechanisms.SparkyTheRobot;
@@ -11,25 +11,21 @@ import org.firstinspires.ftc.teamcode.Utilities.Control.HoldingPIDMotor;
 import org.firstinspires.ftc.teamcode.Vision.VuforiaCVUtil;
 import org.opencv.core.Rect;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-
+@Config
 public abstract class AutoUtils extends VuforiaCVUtil {
     public StartingPosition startingPosition;
     public SparkyTheRobot robot;
-    public HoldingPIDMotor hangMotor;
 
     public static double MARKER_DEPLOYER_DEPLOY = 0;
     public static double MARKER_DEPLOYER_RETRACTED = 0.85;
+    public static double HANG_HOLD_POWER = -0.15;
 
     double TURN_MAX_SPEED = 0.6;
     double ACCEPTABLE_HEADING_VARIATION = Math.PI / 45;
 
     public void setWinchHoldPosition() {
         robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        robot.winch.setPower(0.5);
+        robot.winch.setPower(1);
         robot.winch.setTargetPosition(0);
     }
 
@@ -40,54 +36,56 @@ public abstract class AutoUtils extends VuforiaCVUtil {
 
     public void unhookFromLander(SampleMecanumDriveREV drive, SparkyTheRobot robot, DetachMethod method) {
 
-        // Lower robot
+        // Lower robot in two phases
+        // In the first phase, we will lower the robot "manually"
+        // In the second phase, we will just freefall to be faster
+
+        robot.updateReadings();
         robot.winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.winch.setPower(-1);
+        robot.winch.setPower(1);
         while (opModeIsActive()) {
             robot.updateReadings();
-            if (robot.imu.getGravity().zAccel >= 9.7) {
+            if (robot.primaryIMU.getGravity().zAccel >= 9.6) {
                 break;
             }
         }
-        robot.winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.winch.setMotorEnable();
+        robot.winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.winch.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.winch.setPower(0);
 
+        robot.updateReadings();
         if (method == DetachMethod.STRAFE) {
             followPath(drive, Paths.UNHOOK);
         } else if (method == DetachMethod.TURN) {
-            // Make sure we turn correct direction
-            turnToPos(Math.PI, -1);
+            // Flip around, making sure we turn the correct direction
+            turnToPos(robot.normAngle(Math.PI + robot.getGyroHeading()), -1);
         }
 
         // Now, lower the hang arm
-        robot.linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        robot.linearSlide.setPower(0.4);
-        robot.linearSlide.setTargetPosition(500);
-        robot.intake.setPos(0.8);
-
-        robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        robot.winch.setPower(1);
-        robot.winch.setTargetPosition(1500);
-
-        // Sleep a little bit to let things move
-        // a little
-        sleep(500);
 
         if (method == DetachMethod.STRAFE) {
+            // Sleep a little bit to let things move
+            // a little
+            robot.intake.collect();
+
+            robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.winch.setPower(1);
+            robot.winch.setTargetPosition(-1500);
+
+            sleep(500);
             followPath(drive, Paths.UNDO_UNHOOK);
         }
     }
 
     public void refoldMechanisms() {
         robot.winch.setMotorDisable();
-        robot.linearSlide.setTargetPosition(0);
         robot.intake.goToMin();
     }
 
     public static int getMiddlePosition(Rect boundingBox) {
         return boundingBox.x + (boundingBox.width / 2);
     }
-
     public void followPath(SampleMecanumDriveREV drive, Trajectory trajectory) {
         drive.followTrajectory(trajectory);
         while (!isStopRequested() && drive.isFollowingTrajectory()) {
@@ -113,7 +111,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
 
             // Optionally force turn direction
             // But allow for minor changes in direction the other way
-            if (forcedDir != 0 && difference >= Math.PI / 2) {
+            if (forcedDir != 0 && Math.abs(difference) >= Math.PI / 2) {
                 turnSpeed = Math.copySign(turnSpeed, forcedDir);
             }
 
@@ -139,53 +137,35 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         }
     }
 
-    /* This is really complicated and probably doesn't provide a
-    whole lot of benefit. You should really think about whether
-    this is worth the additional complexity
-     */
-
-    public static int MIN_ANALYZE_TIME_MS = 1000;
     public GoldPosition waitAndWatchMinerals() {
         // This sometimes might count the same frame twice
         // but we're OK with that - we'll just run this for
         // a set time, not a set frame count
-        Queue<GoldPosition> visionResults = new PriorityQueue<>();
-        ElapsedTime timer = new ElapsedTime();
+        robot.winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.winch.setPower(HANG_HOLD_POWER);
+        GoldPosition result = GoldPosition.CENTER;
 
-        while ((!isStarted() || timer.milliseconds() < MIN_ANALYZE_TIME_MS) && !isStopRequested()) {
-            if (getMiddlePosition(detector.getFoundRect()) < 50) {
-                visionResults.add(GoldPosition.RIGHT);
-            } else if (getMiddlePosition(detector.getFoundRect()) < 400) {
-                visionResults.add(GoldPosition.CENTER);
+        // Positions:
+
+        // Left: 517
+        // Center: 297
+        // Right: 80
+
+        while (!isStarted() && !isStopRequested()) {
+            int middleLine = getMiddlePosition(detector.getFoundRect());
+
+            if (middleLine < 200) {
+                result = GoldPosition.RIGHT;
+            } else if (middleLine < 400) {
+                result = GoldPosition.CENTER;
             } else {
-                visionResults.add(GoldPosition.LEFT);
+                result = GoldPosition.LEFT;
             }
 
-            if (timer.milliseconds() > MIN_ANALYZE_TIME_MS) {
-                // We need to start overwriting old data
-                visionResults.remove();
-            }
+            telemetry.addData("Vision line", middleLine);
+            telemetry.addData("Vision", result.toString());
+            telemetry.update();
         }
-
-        // Now, find the mode of our data
-        Map<GoldPosition, Integer> histogram = new HashMap<>();
-        histogram.put(GoldPosition.LEFT, 0);
-        histogram.put(GoldPosition.CENTER, 0);
-        histogram.put(GoldPosition.RIGHT, 0);
-
-        while (!visionResults.isEmpty()) {
-            GoldPosition result = visionResults.remove();
-            histogram.put(result, histogram.get(result) + 1);
-        }
-
-        // Default to center (cause it's fastest)
-        if (histogram.get(GoldPosition.LEFT) > histogram.get(GoldPosition.CENTER) &&
-                histogram.get(GoldPosition.LEFT) > histogram.get(GoldPosition.RIGHT)) {
-            return GoldPosition.LEFT;
-        } else if (histogram.get(GoldPosition.RIGHT) > histogram.get(GoldPosition.CENTER)) {
-            return GoldPosition.RIGHT;
-        } else {
-            return GoldPosition.CENTER;
-        }
+        return result;
     }
 }
