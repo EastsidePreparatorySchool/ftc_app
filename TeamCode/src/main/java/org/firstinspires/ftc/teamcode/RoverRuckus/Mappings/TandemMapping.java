@@ -50,7 +50,7 @@ public class TandemMapping extends SoloMapping {
 
     @Override
     public boolean shakeCamera() {
-        return gamepad1.a ^ gamepad2.a;
+        return gamepad1.a ^ gamepad2.a; //why xor?
     }
 
     @Override

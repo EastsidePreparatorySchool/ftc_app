@@ -19,7 +19,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static double HEADING_INTERVAL = Math.PI / 4;
     public static double MAX_EXTEND_POWER = 1.0;
 
-    public static double TRANSLATE_POWER = 2.0;
+    public static double TRANSLATE_POWER = 3; //the power to which joystick distance in exponented
     public static double TURN_POWER = 2.0;
 
     public ControlMapping controller;
@@ -34,11 +34,12 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public void runOpMode() {
 
         robot = new SparkyTheRobot(this);
-        robot.calibrate(fieldCentric);
+        robot.calibrate(fieldCentric); //set gyros, set orientation
 
-        loopTime = new ElapsedTime();
+        loopTime = new ElapsedTime(); //Timer
 
-        feedback = new FeedbackController(robot.leftHub, robot.rightHub);
+        feedback = new FeedbackController(robot.leftHub, robot.rightHub); //
+
         winch = new HoldingPIDMotor(robot.winch, 1);
 
         // Enable PID control on these motors
@@ -94,7 +95,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (controller.flipOut()) {robot.intake.collect();}
             else if (controller.flipBack()) {robot.intake.deposit();}
-            else if (controller.armSpeed() < 0) {robot.intake.collect();}
+            else if (controller.armSpeed() > 0) {robot.intake.collect();}
             // QUINN TODO IF DIRECTION IS WRONG CHANGE THIS TO "> 0"
 
             // Get base mecanum values
@@ -147,12 +148,12 @@ public abstract class BaseTeleOp extends LinearOpMode {
     }
 
     public double getDist() {
-        double d = Math.sqrt(Math.pow(controller.driveStickY(), 2) + Math.pow(controller.driveStickX(), 2));
+        double d = Math.sqrt(Math.pow(controller.driveStickY(), 2) + Math.pow(controller.driveStickX(), 2)); //dont mess with mr pythagoras
         // QUINN TODO HERE ARE THE DEAD ZONES
         /*if (d < 0.2) {return 0;}
         else if (d > 0.8) {return 1;}
         else {return d;}*/
-        return Math.pow(d, TRANSLATE_POWER);
+        return Math.pow(d, TRANSLATE_POWER); //where the results are scales
     }
 
     public double clamp(double d) {return Math.max(-1, Math.min(1, d));}

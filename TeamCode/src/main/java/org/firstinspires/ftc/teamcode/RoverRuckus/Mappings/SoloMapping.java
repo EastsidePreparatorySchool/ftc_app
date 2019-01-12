@@ -33,6 +33,7 @@ public class SoloMapping extends ControlMapping {
 
     @Override
     public double turnSpeed() {
+        //if we want to do the same thing with power scaling inputs for turning, here would be the place
         return removeLowVals(gamepad1.right_stick_x, 0.2);
     }
 
