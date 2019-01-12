@@ -13,6 +13,10 @@ public class SoloMapping extends ControlMapping {
 
     public static double MIN_SLOW_MOVE_SPEED = 0.4;
 
+    //these should really be in mappings, not in teleop
+    public static double TRANSLATE_POWER = 3; //the power to which joystick distance in exponented
+    public static double TURN_POWER = 2.0;
+
     public int spinDir;
     private boolean x_down, b_down;
 
@@ -23,18 +27,21 @@ public class SoloMapping extends ControlMapping {
 
     @Override
     public double driveStickX() {
-        return gamepad1.left_stick_x;
+        return Math.pow(gamepad1.left_stick_x, TRANSLATE_POWER);
     }
 
     @Override
     public double driveStickY() {
-        return gamepad1.left_stick_y;
+        return Math.pow(gamepad1.left_stick_y, TRANSLATE_POWER);
     }
 
     @Override
     public double turnSpeed() {
-        //if we want to do the same thing with power scaling inputs for turning, here would be the place
-        return removeLowVals(gamepad1.right_stick_x, 0.2);
+        //cube values for bonus precision
+        double sign = gamepad1.right_stick_x < 0 ? -1 : 1;
+        double magnitude = gamepad1.right_stick_x * sign;
+
+        return sign * Math.pow(magnitude, TURN_POWER);
     }
 
     @Override

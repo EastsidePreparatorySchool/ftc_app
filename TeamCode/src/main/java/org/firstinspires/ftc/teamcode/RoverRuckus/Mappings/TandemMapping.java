@@ -11,13 +11,9 @@ public class TandemMapping extends SoloMapping {
 
     @Override
     public double driveStickX() {
-        return gamepad1.left_stick_x * invFact();
+        return super.driveStickX() * invFact();
     }
-
-    @Override
-    public double driveStickY() {
-        return gamepad1.left_stick_y;
-    }
+    // leave driveStickY unchanged
 
     @Override
     public double armSpeed() {

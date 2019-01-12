@@ -19,8 +19,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static double HEADING_INTERVAL = Math.PI / 4;
     public static double MAX_EXTEND_POWER = 1.0;
 
-    public static double TRANSLATE_POWER = 3; //the power to which joystick distance in exponented
-    public static double TURN_POWER = 2.0;
+
 
     public ControlMapping controller;
     public boolean fieldCentric;
@@ -153,7 +152,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         /*if (d < 0.2) {return 0;}
         else if (d > 0.8) {return 1;}
         else {return d;}*/
-        return Math.pow(d, TRANSLATE_POWER); //where the results are scales
+        return d;
     }
 
     public double clamp(double d) {return Math.max(-1, Math.min(1, d));}
