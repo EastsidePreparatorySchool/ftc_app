@@ -71,8 +71,11 @@ public abstract class BaseTeleOp extends LinearOpMode {
         while (opModeIsActive()) {
             controller.update();
 
-            robot.leftFlipper.setPower(controller.armSpeed());
-            robot.rightFlipper.setPower(controller.armSpeed());
+            if (controller.armSpeed() > 0) {
+                robot.arm.setAngle(robot.arm.MAX_ANGLE * 0.5);
+            } else if (controller.armSpeed() < 0) {
+                robot.arm.setAngle(robot.arm.MAX_ANGLE * 1);
+            }
 
             robot.intake.setIntakeSpeed(controller.getSpinSpeed());
 
