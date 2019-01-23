@@ -82,10 +82,15 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (controller.collectWithArm()) {
                 arm.collect();
+                robot.intake.collect();
             } else if (controller.depositWithArm()) {
                 arm.deposit();
             } else {
-                arm.setPower(controller.armSpeed());
+                double desiredArmSpeed = controller.armSpeed();
+                arm.setPower(desiredArmSpeed);
+                if (desiredArmSpeed > 0) {
+                    robot.intake.collect();
+                }
             }
 
             robot.intake.setIntakeSpeed(controller.getSpinSpeed());
