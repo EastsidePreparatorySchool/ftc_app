@@ -90,6 +90,8 @@ public class TandemMapping extends ControlMapping {
     public boolean depositWithArm() {
         if (!up_down && gamepad2.dpad_up) {
             up_down = true;
+            // Now disable intake
+            spinDir = 0;
             return true;
         }
         if (!gamepad2.dpad_up && up_down) {
