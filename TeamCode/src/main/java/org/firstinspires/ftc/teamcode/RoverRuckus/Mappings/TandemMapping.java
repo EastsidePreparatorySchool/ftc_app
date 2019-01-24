@@ -134,9 +134,6 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean flipBack() {
-        if (gamepad2.dpad_right) {
-            spinDir = -1;
-        }
         return gamepad2.dpad_right;
 
     }

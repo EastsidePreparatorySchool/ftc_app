@@ -26,6 +26,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static double SLEW_TURN_FACTOR = 0.2;
     public static int WINCH_MAX_POS = 6700;
     public static double TURN_CORRECT_FACTOR = 1;
+    public static double MS_TO_RETRACT_SLIDE = 500;
+    public static double AUTO_RETRACT_SPEED = -0.4;
 
     public ControlMapping controller;
     public boolean fieldCentric;
@@ -35,6 +37,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
     SparkyTheRobot robot;
     ElapsedTime loopTime;
+    ElapsedTime timeMovingArmDown;
     HoldingPIDMotor winch;
 
     Arm arm;
@@ -47,6 +50,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         headingOffset = 0;
 
         loopTime = new ElapsedTime();
+        timeMovingArmDown = new ElapsedTime();
         wasTurningTo255 = false;
 
         winch = new HoldingPIDMotor(robot.winch, 1);
@@ -93,6 +97,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 arm.setPower(desiredArmSpeed);
                 if (desiredArmSpeed > 0) {
                     robot.intake.collect();
+                    controller.setIntakeDir(-1);
+                } else {
+                    timeMovingArmDown.reset();
                 }
                 if (desiredArmSpeed < 0 && !arm.isCollecting() && !arm.isDepositing()) {
                     controller.setIntakeDir(1);
@@ -124,7 +131,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             // Control linear slide extend retract and drive robot if necessary
             double slidePower = controller.getExtendSpeed();
-            robot.linearSlide.setPower(slidePower);
+            robot.linearSlide.setPower(slidePower +
+                    ((timeMovingArmDown.milliseconds() > MS_TO_RETRACT_SLIDE) ? -AUTO_RETRACT_SPEED : 0));
             int linearSlidePos = robot.linearSlide.getCurrentPosition();
             if (((linearSlidePos < MIN_EXTENDER_POS && slidePower < 0) ||
                     (linearSlidePos > MAX_EXTENDER_POS && slidePower > 0)) &&

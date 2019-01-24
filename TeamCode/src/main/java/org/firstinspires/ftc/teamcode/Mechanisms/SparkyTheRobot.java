@@ -64,7 +64,7 @@ public class SparkyTheRobot extends MecanumHardware {
             parkingMarker = hwMap.get(ServoImplEx.class, "parkingMarker");
             cameraPositioner = new CameraFlipper(cameraFlipper);
 
-            //armIMU = hwMap.get(BNO055IMU.class, "armIMU");
+            armIMU = hwMap.get(BNO055IMU.class, "armIMU");
             hangSwitch = hwMap.get(DigitalChannelImpl.class, "hangSwitch");
             hangSwitch.setMode(DigitalChannel.Mode.INPUT);
 
