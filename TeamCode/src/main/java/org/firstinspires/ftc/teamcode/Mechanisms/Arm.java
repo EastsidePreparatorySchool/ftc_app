@@ -9,8 +9,9 @@ import org.firstinspires.ftc.teamcode.Utilities.Control.HoldingPIDMotor;
 public class Arm {
     public static double MAX_POWER = 0.5;
 
-    public static int POS_DIFFERENCE = 1520;
+    public static int POS_DIFFERENCE = 2500;
     public static int COLLECT_THRESHOLD = 2500;
+    public static int DEPOSIT_THRESHOLD = 2000;
 
     private HoldingPIDMotor leftFlipper, rightFlipper;
     private DcMotorEx extender;
@@ -33,6 +34,10 @@ public class Arm {
 
     public boolean isCollecting() {
         return getCurrentPosition() > COLLECT_THRESHOLD;
+    }
+
+    public boolean isDepositing() {
+        return getCurrentPosition() < DEPOSIT_THRESHOLD;
     }
 
     public void collect() {

@@ -28,6 +28,8 @@ public abstract class ControlMapping {
 
     public abstract boolean lockTo45();
     public abstract boolean lockTo225();
+    public abstract boolean resetHeading();
+
 
     public abstract boolean flipOut();
     public abstract boolean flipBack();
@@ -43,6 +45,7 @@ public abstract class ControlMapping {
     public abstract double getSpinSpeed();
 
     public abstract boolean override();
+    public abstract void setIntakeDir(int d);
 
     // Metric must be 0-1
     static double scaleControl(double metric, double min, double max) {

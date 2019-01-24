@@ -13,7 +13,7 @@ public class TandemMapping extends ControlMapping {
     public static double MIN_TURN_SPEED_F = 0.2;
     public static double MIN_MOVE_SPEED = 0.6;
 
-    public static double MAX_GP2_TURN_SPEED = 0.3;
+    public static double MAX_GP2_TURN_SPEED = 0.5;
 
     public static double EXPONENT = 1.5;
     public static double TURN_SPEED_FACTOR = 0.8;
@@ -64,8 +64,14 @@ public class TandemMapping extends ControlMapping {
         return gamepad1.a || gamepad2.a;
     }
 
+    @Override
     public boolean lockTo225() {
-        return gamepad1.y;
+        return gamepad1.y && !gamepad1.start;
+    }
+
+    @Override
+    public boolean resetHeading() {
+        return gamepad1.x && gamepad1.start;
     }
 
     @Override
@@ -91,7 +97,7 @@ public class TandemMapping extends ControlMapping {
         if (!up_down && gamepad2.dpad_up) {
             up_down = true;
             // Now disable intake
-            spinDir = 0;
+            spinDir = 1;
             return true;
         }
         if (!gamepad2.dpad_up && up_down) {
@@ -101,11 +107,20 @@ public class TandemMapping extends ControlMapping {
     }
 
     public double getExtendSpeed() {
-        return -clamp(gamepad2.left_stick_y);
+        return (getGP2LeftStickMode() == GP2_MODE.EXTEND) ? -clamp(gamepad2.left_stick_y) : 0;
     }
 
     public double getSlewSpeed() {
-        return -gamepad2.left_stick_x;
+        return (getGP2LeftStickMode() == GP2_MODE.SLEW) ? -gamepad2.left_stick_x : 0;
+    }
+
+    enum GP2_MODE {
+        EXTEND,
+        SLEW
+    }
+
+    private GP2_MODE getGP2LeftStickMode() {
+        return (Math.abs(gamepad2.left_stick_x) > Math.abs(gamepad2.left_stick_y)) ? GP2_MODE.SLEW : GP2_MODE.EXTEND;
     }
 
     public double getGP2TurnSpeed() {
@@ -133,7 +148,7 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public double getSpinSpeed() {
-        if ((gamepad2.x && !g2x_down) || (gamepad1.x && !g1x_down)) {
+        if ((gamepad2.x && !g2x_down)/* || (gamepad1.x && !g1x_down)*/) {
 
             spinDir = (spinDir == -1) ? 0 : -1;
             if (gamepad2.x && !g2x_down) {
@@ -150,7 +165,7 @@ public class TandemMapping extends ControlMapping {
             g1x_down = false;
         }
 
-        if ((gamepad2.b && !g2b_down) || (gamepad1.b && !g1b_down)) {
+        if ((gamepad2.b && !g2b_down)/* || (gamepad1.b && !g1b_down)*/) {
 
             // X was just pressed
             spinDir = (spinDir == 1) ? 0 : 1;
@@ -189,5 +204,10 @@ public class TandemMapping extends ControlMapping {
             spinDir = 0;
         }
         return dir;
+    }
+
+    @Override
+    public void setIntakeDir(int dir) {
+        spinDir = dir;
     }
 }

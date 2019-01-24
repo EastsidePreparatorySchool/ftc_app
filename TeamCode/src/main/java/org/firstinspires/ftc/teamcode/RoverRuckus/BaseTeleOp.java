@@ -17,19 +17,21 @@ import org.firstinspires.ftc.teamcode.Utilities.Control.WheelDriveVector;
 @Config
 public abstract class BaseTeleOp extends LinearOpMode {
     public static double HEADING_INTERVAL = Math.PI / 4;
-    public static int MAX_EXTENDER_POS = 950;
+    public static double HEADING_RESET_POSITION = Math.PI * 0.25;
+    public static int MAX_EXTENDER_POS = 800;
     public static int MIN_EXTENDER_POS = 0;
-    public static double EXTEND_MAXED_DRIVE_POWER = 0.4;
+    public static double EXTEND_MAXED_DRIVE_POWER = 0.6;
     public static double TURN_MAX_SPEED = 1.0;
     public static double TURN_SPEED_CUTOFF = 0.03;
     public static double SLEW_TURN_FACTOR = 0.2;
     public static int WINCH_MAX_POS = 6700;
-    public static double TURN_CORRECT_FACTOR = 0.5;
+    public static double TURN_CORRECT_FACTOR = 1;
 
     public ControlMapping controller;
     public boolean fieldCentric;
 
     private boolean wasTurningTo255;
+    private double headingOffset;
 
     SparkyTheRobot robot;
     ElapsedTime loopTime;
@@ -42,6 +44,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
         robot = new SparkyTheRobot(this);
         robot.calibrate(true);
+        headingOffset = 0;
 
         loopTime = new ElapsedTime();
         wasTurningTo255 = false;
@@ -91,6 +94,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 if (desiredArmSpeed > 0) {
                     robot.intake.collect();
                 }
+                if (desiredArmSpeed < 0 && !arm.isCollecting() && !arm.isDepositing()) {
+                    controller.setIntakeDir(1);
+                }
             }
 
             robot.intake.setIntakeSpeed(controller.getSpinSpeed());
@@ -131,6 +137,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
             speeds.turnSpeed += controller.getSlewSpeed() * SLEW_TURN_FACTOR;
             speeds.turnSpeed += controller.getGP2TurnSpeed();
 
+            if (controller.resetHeading()) {
+                headingOffset = robot.getHeading() + HEADING_RESET_POSITION;
+            }
             // Control heading locking
             if (controller.lockTo45() || controller.lockTo225()) {
                 // Pressing y overrides lock to 45
@@ -139,7 +148,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
                     targetAngle = Math.PI * 0.75;
                 }
 
-                double difference = robot.getSignedAngleDifference(targetAngle, robot.getHeading());
+                double difference = robot.getSignedAngleDifference(targetAngle, robot.normAngle(robot.getHeading() - headingOffset));
                 double turnSpeed = Math.max(-TURN_MAX_SPEED, Math.min(TURN_MAX_SPEED,
                         difference * TURN_CORRECT_FACTOR));
                 turnSpeed = Math.copySign(Math.max(TURN_SPEED_CUTOFF, Math.abs(turnSpeed)), turnSpeed);
