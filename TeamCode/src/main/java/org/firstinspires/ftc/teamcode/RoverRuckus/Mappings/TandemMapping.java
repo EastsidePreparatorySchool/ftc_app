@@ -61,7 +61,7 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean lockTo45() {
-        return gamepad1.a || gamepad2.a;
+        return gamepad1.a;
     }
 
     @Override
@@ -82,11 +82,11 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean collectWithArm() {
-        if (!down_down && gamepad2.dpad_down) {
+        if (!down_down && gamepad2.a) {
             down_down = true;
             return true;
         }
-        if (!gamepad2.dpad_down && down_down) {
+        if (!gamepad2.a && down_down) {
             down_down = false;
         }
         return false;
@@ -94,13 +94,13 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean depositWithArm() {
-        if (!up_down && gamepad2.dpad_up) {
+        if (!up_down && gamepad2.y) {
             up_down = true;
             // Now disable intake
             spinDir = 1;
             return true;
         }
-        if (!gamepad2.dpad_up && up_down) {
+        if (!gamepad2.y && up_down) {
             up_down = false;
         }
         return false;
@@ -134,13 +134,16 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean flipBack() {
+        if (gamepad2.dpad_right && spinDir == 1) {
+            spinDir = -1;
+        }
         return gamepad2.dpad_right;
 
     }
 
     @Override
     public boolean shakeCamera() {
-        return gamepad1.back ^ gamepad2.a;
+        return gamepad1.back;
     }
 
     @Override

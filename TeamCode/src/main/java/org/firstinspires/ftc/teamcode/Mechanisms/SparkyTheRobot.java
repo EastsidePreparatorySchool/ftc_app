@@ -39,6 +39,7 @@ public class SparkyTheRobot extends MecanumHardware {
     // Sensors
     public BNO055IMU armIMU;
     public DigitalChannel hangSwitch;
+    public DigitalChannel slideSwitch; // ON when fully extended
 
     public SoundEffectManager soundEffects;
 
@@ -67,6 +68,8 @@ public class SparkyTheRobot extends MecanumHardware {
             armIMU = hwMap.get(BNO055IMU.class, "armIMU");
             hangSwitch = hwMap.get(DigitalChannelImpl.class, "hangSwitch");
             hangSwitch.setMode(DigitalChannel.Mode.INPUT);
+            slideSwitch = hwMap.get(DigitalChannelImpl.class, "slideSwitch");
+            slideSwitch.setMode(DigitalChannel.Mode.INPUT);
 
             leftFlipper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             rightFlipper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);

@@ -27,7 +27,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static int WINCH_MAX_POS = 6700;
     public static double TURN_CORRECT_FACTOR = 1;
     public static double MS_TO_RETRACT_SLIDE = 500;
-    public static double AUTO_RETRACT_SPEED = -0.4;
+    public static double AUTO_RETRACT_SPEED = 0.4;
 
     public ControlMapping controller;
     public boolean fieldCentric;
@@ -55,7 +55,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
         winch = new HoldingPIDMotor(robot.winch, 1);
 
-        arm = new Arm(robot.leftFlipper, robot.rightFlipper, robot.linearSlide);
+        arm = new Arm(robot.leftFlipper, robot.rightFlipper, robot.linearSlide, robot.armIMU);
 
         // Enable PID control on these motors
         robot.leftFlipper.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -179,6 +179,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
             telemetry.addData("Drive stick y", controller.driveStickY());
             telemetry.addData("Drive stick actual y", gamepad1.left_stick_y);
             telemetry.addData("Extender position", robot.linearSlide.getCurrentPosition());
+            telemetry.addData("Acc arm position", arm.getPositionRadians());
+            telemetry.addData("Mag switch", robot.slideSwitch.getState());
 
             telemetry.addData("Winch pos", robot.winch.getCurrentPosition());
             telemetry.addData("Loop time", loopTime.milliseconds());
