@@ -21,20 +21,20 @@ public abstract class BaseTeleOp extends LinearOpMode {
     // Where the robot will be facing when the "heading reset" button is clicked
     public static double HEADING_RESET_POSITION = Math.PI * 0.25;
 
-
-    public static int MAX_EXTENDER_POS = 800;
-    public static int MIN_EXTENDER_POS = 0;
-
     // How fast the robot moves when the arm is fully extended/retracted
     public static double EXTEND_MAXED_DRIVE_POWER = 0.6;
 
-    // How fast the first drive
-    public static double TURN_MAX_SPEED = 1.0;
-    public static double TURN_SPEED_CUTOFF = 0.03;
-    public static double SLEW_TURN_FACTOR = 0.2;
-    public static double TURN_CORRECT_FACTOR = 1;
-    public static double AUTO_RETRACT_SPEED = 0.4;
+    // Constants for auto-turning
+    public static double TURN_MAX_SPEED = 1.0; // Max auto-turn speed
+    public static double TURN_SPEED_CUTOFF = 0.03; // How slow we should turn before stopping
+    public static double TURN_CORRECT_FACTOR = 1; // Our P constant for turning
 
+    // How much the robot should turn while strafing
+    public static double SLEW_TURN_FACTOR = 0.2;
+
+    // How long the triggers need to be held down before the macros
+    // will kick in. They will have to hold down the triggers for this many MS
+    // with at least the power stated below
     public static int MS_USE_DOWN_MACROS = 500;
     public static int MS_USE_UP_MACROS = 500;
     public static double POWER_USE_UP_DOWN_MACROS = 0.3;
@@ -165,10 +165,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
             double slidePower = controller.getExtendSpeed();
             extender.setPower(slidePower);
 
-            int linearSlidePos = extender.getPosition();
             if (
-                    ((linearSlidePos < MIN_EXTENDER_POS && slidePower < 0) ||
-                    (linearSlidePos > MAX_EXTENDER_POS && slidePower > 0)) &&
+                    ((extender.minExtend() && slidePower < 0) ||
+                    (extender.maxExtend() && slidePower > 0)) &&
                     arm.isCollecting()) { // Don't move robot if we're not collecting
                 speeds.forwardSpeed += slidePower * EXTEND_MAXED_DRIVE_POWER;
             }

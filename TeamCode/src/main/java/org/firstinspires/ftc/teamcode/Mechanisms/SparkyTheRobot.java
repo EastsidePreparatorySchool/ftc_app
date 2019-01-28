@@ -114,6 +114,5 @@ public class SparkyTheRobot extends MecanumHardware {
         for (DcMotor m : motors) {
             m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        opMode.telemetry.log().add("Finished calibration");
     }
 }
