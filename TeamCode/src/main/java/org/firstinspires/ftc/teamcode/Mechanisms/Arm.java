@@ -12,10 +12,9 @@ public class Arm {
     public static double MAX_POWER = 0.9;
 
     public static int POS_DIFFERENCE = 2100;
-    //public static double DEPOSIT_THRESHOLD = 8.38;
-    //public static double COLLECT_THRESHOLD = 10.47;
-    public static int COLLECT_THRESHOLD = 2500;
-    public static int DEPOSIT_THRESHOLD = 2000;
+    public static double COLLECT_THRESHOLD = 2.35;
+    //public static int COLLECT_THRESHOLD = 2500;
+    //public static int DEPOSIT_THRESHOLD = 2000;
 
     public static final BNO055IMU.Parameters metricParameters = new BNO055IMU.Parameters();
     static {
@@ -57,11 +56,7 @@ public class Arm {
     }
 
     public boolean isCollecting() {
-        return getEncoderPosition() > COLLECT_THRESHOLD;
-    }
-
-    public boolean isDepositing() {
-        return getEncoderPosition() < DEPOSIT_THRESHOLD;
+        return getPositionRadians() > COLLECT_THRESHOLD;
     }
 
     public void collect() {

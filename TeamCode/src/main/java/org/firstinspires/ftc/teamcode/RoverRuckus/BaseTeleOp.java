@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Mechanisms.Arm;
+import org.firstinspires.ftc.teamcode.Mechanisms.Extender;
 import org.firstinspires.ftc.teamcode.Mechanisms.SparkyTheRobot;
 import org.firstinspires.ftc.teamcode.RoverRuckus.Auto.AutoUtils;
 import org.firstinspires.ftc.teamcode.RoverRuckus.Mappings.ControlMapping;
@@ -16,18 +17,31 @@ import org.firstinspires.ftc.teamcode.Utilities.Control.WheelDriveVector;
 
 @Config
 public abstract class BaseTeleOp extends LinearOpMode {
-    public static double HEADING_INTERVAL = Math.PI / 4;
+
+    // Where the robot will be facing when the "heading reset" button is clicked
     public static double HEADING_RESET_POSITION = Math.PI * 0.25;
+
+
     public static int MAX_EXTENDER_POS = 800;
     public static int MIN_EXTENDER_POS = 0;
+
+    // How fast the robot moves when the arm is fully extended/retracted
     public static double EXTEND_MAXED_DRIVE_POWER = 0.6;
+
+    // How fast the first drive
     public static double TURN_MAX_SPEED = 1.0;
     public static double TURN_SPEED_CUTOFF = 0.03;
     public static double SLEW_TURN_FACTOR = 0.2;
-    public static int WINCH_MAX_POS = 6700;
     public static double TURN_CORRECT_FACTOR = 1;
-    public static double MS_TO_RETRACT_SLIDE = 500;
     public static double AUTO_RETRACT_SPEED = 0.4;
+
+    public static int MS_USE_DOWN_MACROS = 500;
+    public static int MS_USE_UP_MACROS = 500;
+    public static double POWER_USE_UP_DOWN_MACROS = 0.3;
+
+    // How far up the winch should go
+    public static int WINCH_MAX_POS = 6700;
+
 
     public ControlMapping controller;
     public boolean fieldCentric;
@@ -38,7 +52,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
     SparkyTheRobot robot;
     ElapsedTime loopTime;
     ElapsedTime timeMovingArmDown;
+    ElapsedTime timeMovingArmUp;
     HoldingPIDMotor winch;
+    Extender extender;
 
     Arm arm;
 
@@ -51,11 +67,13 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
         loopTime = new ElapsedTime();
         timeMovingArmDown = new ElapsedTime();
+        timeMovingArmUp = new ElapsedTime();
         wasTurningTo255 = false;
 
         winch = new HoldingPIDMotor(robot.winch, 1);
 
         arm = new Arm(robot.leftFlipper, robot.rightFlipper, robot.linearSlide, robot.armIMU);
+        extender = new Extender(robot.slideSwitch, robot.linearSlide);
 
         // Enable PID control on these motors
         robot.leftFlipper.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -74,7 +92,6 @@ public abstract class BaseTeleOp extends LinearOpMode {
         telemetry.log().add("Running RR2 TeleOp");
         telemetry.log().add("Control mapping: [[" + controller.getClass().getSimpleName() + "]]");
         telemetry.log().add("Relativity     : [[" + (fieldCentric ? "Field" : "Robot") + " centric]]");
-        telemetry.log().add("Stick divisions: [[" + (int) ((2*Math.PI) / HEADING_INTERVAL) + " divisions]]");
         telemetry.update();
 
 
@@ -87,26 +104,37 @@ public abstract class BaseTeleOp extends LinearOpMode {
         while (opModeIsActive()) {
             controller.update();
 
+            // For macro move up and down, perform shortcuts
             if (controller.collectWithArm()) {
                 arm.collect();
                 robot.intake.collect();
+                controller.setIntakeDir(-1);
+                extender.goToCollect();
             } else if (controller.depositWithArm()) {
                 arm.deposit();
+                controller.setIntakeDir(1);
+                extender.goToMax();
             } else {
                 double desiredArmSpeed = controller.armSpeed();
                 arm.setPower(desiredArmSpeed);
                 if (desiredArmSpeed > 0) {
                     robot.intake.collect();
-                    controller.setIntakeDir(-1);
-                } else {
+                }
+                if (desiredArmSpeed <= POWER_USE_UP_DOWN_MACROS) {
                     timeMovingArmDown.reset();
                 }
-                if (desiredArmSpeed < 0 && !arm.isCollecting() && !arm.isDepositing()) {
-                    controller.setIntakeDir(1);
+                if (desiredArmSpeed >= -POWER_USE_UP_DOWN_MACROS) {
+                    timeMovingArmUp.reset();
                 }
             }
 
-            robot.intake.setIntakeSpeed(controller.getSpinSpeed());
+            if (timeMovingArmUp.milliseconds() > MS_USE_UP_MACROS) {
+                extender.goToMax();
+                controller.setIntakeDir(1);
+            }
+            if (timeMovingArmDown.milliseconds() > MS_USE_DOWN_MACROS) {
+                extender.goToCollect();
+            }
 
             if (controller.shakeCamera()) {
                 robot.cameraPositioner.flipUp();
@@ -123,18 +151,23 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             winch.setPower(winchPower);
             if (controller.flipOut()) {robot.intake.collect();}
-            else if (controller.flipBack()) {robot.intake.deposit();}
-            else if (controller.armSpeed() < 0) {robot.intake.collect();}
+            else if (controller.flipBack()) {
+                robot.intake.deposit();
+                controller.setIntakeDir(-1);
+            } else if (controller.armSpeed() < 0) {robot.intake.collect();}
+
+            robot.intake.setIntakeSpeed(controller.getSpinSpeed());
 
             WheelDriveVector speeds = new WheelDriveVector(controller.driveStickY(), controller.driveStickX(), controller.turnSpeed());
             speeds.scale(controller.translateSpeedScale(), controller.turnSpeedScale());
 
             // Control linear slide extend retract and drive robot if necessary
             double slidePower = controller.getExtendSpeed();
-            robot.linearSlide.setPower(slidePower +
-                    ((timeMovingArmDown.milliseconds() > MS_TO_RETRACT_SLIDE) ? -AUTO_RETRACT_SPEED : 0));
-            int linearSlidePos = robot.linearSlide.getCurrentPosition();
-            if (((linearSlidePos < MIN_EXTENDER_POS && slidePower < 0) ||
+            extender.setPower(slidePower);
+
+            int linearSlidePos = extender.getPosition();
+            if (
+                    ((linearSlidePos < MIN_EXTENDER_POS && slidePower < 0) ||
                     (linearSlidePos > MAX_EXTENDER_POS && slidePower > 0)) &&
                     arm.isCollecting()) { // Don't move robot if we're not collecting
                 speeds.forwardSpeed += slidePower * EXTEND_MAXED_DRIVE_POWER;
@@ -188,19 +221,4 @@ public abstract class BaseTeleOp extends LinearOpMode {
             telemetry.update();
         }
     }
-
-    public double getControllerDir() {
-        double controllerAngle = Math.atan2(controller.driveStickY(), -controller.driveStickX()) + Math.PI / 2;
-        controllerAngle = Math.round(controllerAngle / HEADING_INTERVAL) * HEADING_INTERVAL;
-
-        if (fieldCentric) {
-            robot.updateReadings();
-            controllerAngle += robot.getGyroHeading();
-        }
-
-        return controllerAngle;
-    }
-
-
-    public double clamp(double d) {return Math.max(-1, Math.min(1, d));}
 }

@@ -65,6 +65,7 @@ public abstract class SuperiorSampling extends AutoUtils {
         } else {
             unhookFromLander(drive, robot, Math.PI * 1.75);
         }
+        telemetry.log().add("Heading before driving: " + robot.getGyroHeading());
 
         robot.cameraPositioner.flipDown();
         try {
