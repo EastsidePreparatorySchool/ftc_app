@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.Utilities.Control.HoldingPIDMotor;
 public class Extender {
     public static int MAX_EXTENDER_POS = 1100;
     public static int MIN_EXTENDER_POS = 0;
-    public static int COLLECT_POS = 500;
+    public static int COLLECT_POS = 0;
 
     public static int MAXED_THRESHOLD = 800;
     public static int MIN_THRESHOLD = 0;
