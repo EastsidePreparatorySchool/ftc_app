@@ -39,6 +39,15 @@ public class HoldingPIDMotor {
         dir = 0;
     }
 
+    public void stop() {
+        m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        m.setPower(0);
+    }
+
+    public boolean isBusy() {
+        return m.isBusy();
+    }
+
     public int getCurrentPosition() {
         return m.getCurrentPosition();
     }

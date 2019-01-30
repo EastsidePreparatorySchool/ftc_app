@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Mechanisms;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DigitalChannelImpl;
@@ -36,6 +37,9 @@ public class Extender {
             prevState = false;
         } else if (currState && !prevState) {
             prevState = true;
+        }
+        if (p == 0 && !extender.isBusy()) {
+            extender.stop();
         }
     }
 
