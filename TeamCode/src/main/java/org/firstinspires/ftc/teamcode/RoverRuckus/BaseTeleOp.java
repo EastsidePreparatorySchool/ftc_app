@@ -39,7 +39,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static int MS_USE_UP_MACROS = 500;
     public static double POWER_USE_UP_DOWN_MACROS = 0.3;
 
-    public static int MS_DELAY_EXTEND = 400;
+    public static int MS_DELAY_EXTEND = 600;
 
     // How far up the winch should go
     public static int WINCH_MAX_POS = 6700;
@@ -124,7 +124,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
             } else if (controller.depositWithArm()) {
                 arm.deposit();
                 controller.setIntakeDir(1);
-                // Begin extend/retract operation after delay
+                extender.goToMin();
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
