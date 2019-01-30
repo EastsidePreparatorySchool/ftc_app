@@ -39,6 +39,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static int MS_USE_UP_MACROS = 500;
     public static double POWER_USE_UP_DOWN_MACROS = 0.3;
 
+    public static int MS_DELAY_EXTEND = 400;
+
     // How far up the winch should go
     public static int WINCH_MAX_POS = 6700;
 
@@ -109,11 +111,29 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 arm.collect();
                 robot.intake.collect();
                 controller.setIntakeDir(-1);
-                extender.goToCollect();
+                // Begin extend/retract operation after delay
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                extender.goToCollect();
+                            }
+                        },
+                        MS_DELAY_EXTEND
+                );
             } else if (controller.depositWithArm()) {
                 arm.deposit();
                 controller.setIntakeDir(1);
-                extender.goToMax();
+                // Begin extend/retract operation after delay
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                extender.goToMax();
+                            }
+                        },
+                        MS_DELAY_EXTEND
+                );
             } else {
                 double desiredArmSpeed = controller.armSpeed();
                 arm.setPower(desiredArmSpeed);
