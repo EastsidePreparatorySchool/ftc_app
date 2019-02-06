@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Mechanisms;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServoImplEx;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -35,6 +36,7 @@ public class SparkyTheRobot extends MecanumHardware {
     public Servo parkingMarker;
     private Servo cameraFlipper;
     public CameraFlipper cameraPositioner;
+    public RevBlinkinLedDriver leds;
 
     // Sensors
     public BNO055IMU armIMU;
@@ -63,6 +65,7 @@ public class SparkyTheRobot extends MecanumHardware {
             markerDeployer = hwMap.get(ServoImplEx.class, "markerDeployer");
             cameraFlipper = hwMap.get(ServoImplEx.class, "cameraFlipper");
             parkingMarker = hwMap.get(ServoImplEx.class, "parkingMarker");
+            leds = hwMap.get(RevBlinkinLedDriver.class, "leds");
             cameraPositioner = new CameraFlipper(cameraFlipper);
 
             armIMU = hwMap.get(BNO055IMU.class, "armIMU");
