@@ -33,10 +33,13 @@ public abstract class ControlMapping {
 
     public abstract boolean flipOut();
     public abstract boolean flipBack();
+    public abstract boolean flipToMin();
     public abstract double getExtendSpeed();
     public abstract double getSlewSpeed();
     public abstract double getGP2TurnSpeed();
     public abstract int getHangDir();
+    public abstract boolean disableGP2Controls();
+    public abstract boolean retakeControls();
 
     public abstract boolean collectWithArm();
     public abstract boolean depositWithArm();

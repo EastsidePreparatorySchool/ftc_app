@@ -35,11 +35,11 @@ public class SparkyTheRobot extends MecanumHardware {
     public Servo markerDeployer;
     public Servo parkingMarker;
     private Servo cameraFlipper;
+    public Servo blockTrapper;
     public CameraFlipper cameraPositioner;
     public RevBlinkinLedDriver leds;
 
     // Sensors
-    public BNO055IMU armIMU;
     public DigitalChannel hangSwitch;
     public DigitalChannel slideSwitch; // ON when fully extended
 
@@ -68,7 +68,6 @@ public class SparkyTheRobot extends MecanumHardware {
             leds = hwMap.get(RevBlinkinLedDriver.class, "leds");
             cameraPositioner = new CameraFlipper(cameraFlipper);
 
-            armIMU = hwMap.get(BNO055IMU.class, "armIMU");
             hangSwitch = hwMap.get(DigitalChannelImpl.class, "hangSwitch");
             hangSwitch.setMode(DigitalChannel.Mode.INPUT);
             slideSwitch = hwMap.get(DigitalChannelImpl.class, "slideSwitch");

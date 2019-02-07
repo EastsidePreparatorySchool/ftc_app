@@ -25,14 +25,11 @@ public class Arm {
 
     private HoldingPIDMotor leftFlipper, rightFlipper;
     private DcMotorEx extender;
-    private BNO055IMU armIMU;
 
-    public Arm (DcMotorEx leftMotor, DcMotorEx rightMotor, DcMotorEx extender, BNO055IMU armIMU) {
+    public Arm (DcMotorEx leftMotor, DcMotorEx rightMotor, DcMotorEx extender) {
         leftFlipper  = new HoldingPIDMotor(leftMotor, MAX_POWER);
         rightFlipper = new HoldingPIDMotor(rightMotor, MAX_POWER);
         this.extender = extender;
-        this.armIMU = armIMU;
-        this.armIMU.initialize(metricParameters);
     }
 
     public void setPower(double p) {
@@ -45,7 +42,7 @@ public class Arm {
                 rightFlipper.getCurrentPosition()) / 2;
     }
 
-    public double getPositionRadians() {
+    /*public double getPositionRadians() {
         Acceleration acc = armIMU.getGravity();
         double raw = Math.atan2(acc.zAccel, acc.yAccel);
         if (raw < 0) {
@@ -57,7 +54,7 @@ public class Arm {
 
     public boolean isCollecting() {
         return getPositionRadians() > COLLECT_THRESHOLD;
-    }
+    }*/
 
     public void collect() {
         leftFlipper.setTargetPos(leftFlipper.getCurrentPosition() + POS_DIFFERENCE);

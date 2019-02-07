@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.RoverRuckus.Auto;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -115,6 +117,11 @@ public abstract class AutoUtils extends VuforiaCVUtil {
             robot.setMotorSpeeds(unscaledMotorPowers);
         }
         stopMoving();
+        Log.i("AutoUtils", "Finished turn at " + robot.getHeading());
+        robot.sleep(400);
+        if (Math.abs(robot.getSignedAngleDifference(pos, robot.getHeading())) > ACCEPTABLE_HEADING_VARIATION) {
+            turnToPos(pos);
+        }
     }
 
     public void stopMoving() {

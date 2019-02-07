@@ -82,7 +82,7 @@ public abstract class SuperiorSampling extends AutoUtils {
                 robot.sleep(1000);
             } else {
                 followPath(drive, AssetsTrajectoryLoader.load("Crater" + goldLoc.fileName + "Sel"));
-
+                stopMoving();
                 if (goal == EndGoal.BLUE_CRATER || goldLoc == GoldPosition.RIGHT) {
                     switchAppendagePositions();
                 }
