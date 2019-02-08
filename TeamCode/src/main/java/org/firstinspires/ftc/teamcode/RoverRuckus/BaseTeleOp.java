@@ -34,7 +34,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     };
 
     // How much current we need to draw before we increase our severity
-    public static double SERVO_CURRENT_THRESHOLD = 1500;
+    public static double SERVO_CURRENT_THRESHOLD = 2800; // 2.8 A
 
     // How fast the robot moves when the arm is fully extended/retracted
     public static double EXTEND_MAXED_DRIVE_POWER = 0.6;
@@ -111,6 +111,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         wasTurningTo255 = false;
         armIsCollecting = false;
         endgameActivities = false;
+        timing = false;
 
         winch = new HoldingPIDMotor(robot.winch, 1);
 
@@ -309,11 +310,12 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             robot.setMotorSpeeds(speeds.getDrivePowers());
 
-            double timeElapsed = timeSinceMatchStart.seconds();
-            if (timeElapsed > TIME_GAMEPLAY_DONE) {
-                color = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_LAVA_PALETTE;
-            } else if (timeElapsed > TIME_MUST_HANG) {
-                color = RevBlinkinLedDriver.BlinkinPattern.CP1_HEARTBEAT_FAST;
+            if (timing) {
+                if (timeSinceMatchStart.seconds() > TIME_GAMEPLAY_DONE) {
+                    color = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_LAVA_PALETTE;
+                } else if (timeSinceMatchStart.seconds() > TIME_MUST_HANG) {
+                    color = RevBlinkinLedDriver.BlinkinPattern.CP1_HEARTBEAT_FAST;
+                }
             }
 
             // Set LEDs
@@ -327,6 +329,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             // Telemetry
             //feedback.updateTelemetry(telemetry);
+            telemetry.addData("Time", Math.round(timeSinceMatchStart.seconds()));
             telemetry.addData("Servo current", servoCurrent);
             int pos = (robot.leftFlipper.getCurrentPosition() + robot.rightFlipper.getCurrentPosition()) / 2;
             telemetry.addData("Arm position", pos);
