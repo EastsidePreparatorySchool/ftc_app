@@ -17,7 +17,7 @@ public class TandemMapping extends ControlMapping {
 
     public static double MAX_GP2_TURN_SPEED = 0.35;
 
-    public static double EXPONENT = 1.5;
+    public static double EXPONENT = 2;
     public static double TURN_SPEED_FACTOR = 0.8;
 
     public static double HANG_SLOW_SPEED = 0.3;
@@ -136,7 +136,7 @@ public class TandemMapping extends ControlMapping {
     }
 
     public double getGP2TurnSpeed() {
-        return gamepad2.right_stick_x * MAX_GP2_TURN_SPEED;
+        return exp(gamepad2.right_stick_x) * MAX_GP2_TURN_SPEED;
     }
 
     @Override
