@@ -48,6 +48,7 @@ public class SparkyTheRobot extends MecanumHardware {
     public SparkyTheRobot(LinearOpMode oM) {
         super(oM);
         try {
+            leds = hwMap.get(RevBlinkinLedDriver.class, "leds");
             rightHub = hwMap.get(LynxModule.class, "rightHub");
 
             leftFlipper = hwMap.get(DcMotorEx.class, "flipperLeft");
@@ -65,7 +66,7 @@ public class SparkyTheRobot extends MecanumHardware {
             markerDeployer = hwMap.get(ServoImplEx.class, "markerDeployer");
             cameraFlipper = hwMap.get(ServoImplEx.class, "cameraFlipper");
             parkingMarker = hwMap.get(ServoImplEx.class, "parkingMarker");
-            leds = hwMap.get(RevBlinkinLedDriver.class, "leds");
+            blockTrapper = hwMap.get(ServoImplEx.class, "blockTrapper");
             cameraPositioner = new CameraFlipper(cameraFlipper);
 
             hangSwitch = hwMap.get(DigitalChannelImpl.class, "hangSwitch");
@@ -77,24 +78,32 @@ public class SparkyTheRobot extends MecanumHardware {
             rightFlipper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             linearSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            onRawChassis = false;
 
         } catch (IllegalArgumentException e) {
             leftFlipper = new DcMotorExMock();
             rightFlipper = new DcMotorExMock();
             linearSlide = new DcMotorExMock();
             winch = new DcMotorExMock();
+
             markerDeployer = new ServoMock();
             parkingMarker = new ServoMock();
             cameraFlipper = new ServoMock();
+            blockTrapper = new ServoMock();
+            // We don't need to mock LEDs
+
             intake = new IntakeMock(null, null, null, null);
             cameraPositioner = new CameraFlipper(new ServoMock());
             hangSwitch = new DigitalChannelMock();
+            slideSwitch = new DigitalChannelMock();
+            onRawChassis = true;
         }
 
         soundEffects = new SoundEffectManager(hwMap.appContext, SoundEffectManager.PACMAN_AUDIO);
     }
 
     public void calibrate(boolean calibrateGyros) {
+        leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.LARSON_SCANNER_RED);
         DcMotor[] motors =
                 new DcMotor[] {leftFlipper, rightFlipper, winch, linearSlide,
                 frontLeft, frontRight, backLeft, backRight};
@@ -116,5 +125,6 @@ public class SparkyTheRobot extends MecanumHardware {
         for (DcMotor m : motors) {
             m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
+        leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_RED);
     }
 }
