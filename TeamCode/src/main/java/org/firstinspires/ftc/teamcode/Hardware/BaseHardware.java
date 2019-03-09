@@ -34,6 +34,7 @@ public class BaseHardware {
     public BNO055IMU primaryIMU;
     public Orientation angles; // Used to read IMU
     public LynxGetBulkInputDataResponse bulkDataResponse;
+    public boolean onRawChassis;
 
     // Telemetry
     public Telemetry tel;
