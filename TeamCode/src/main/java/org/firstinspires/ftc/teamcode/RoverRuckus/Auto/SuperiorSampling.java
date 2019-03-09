@@ -144,6 +144,7 @@ public abstract class SuperiorSampling extends AutoUtils {
                         turnToPos(0);
                         followPath(drive, Paths.DOUBLE_RETURN_TO_DEPO);
                         beginAppendageSwap();
+                        robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
                         followPath(drive, Paths.DEPOT_TO_SAME_CRATER_SHORT);
                         endAppendageSwap();
                     } else {
