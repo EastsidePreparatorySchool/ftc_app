@@ -40,6 +40,8 @@ public abstract class ControlMapping {
     public abstract int getHangDir();
     public abstract boolean disableGP2Controls();
     public abstract boolean retakeControls();
+    public abstract boolean openLatch();
+    public abstract boolean quickReverse();
 
     public abstract boolean collectWithArm();
     public abstract boolean depositWithArm();

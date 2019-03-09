@@ -146,15 +146,17 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean flipBack() {
-        if ((gamepad2.dpad_right || gamepad1.dpad_right || gamepad1.b) && spinDir == 1) {
-            spinDir = -1;
-        }
-        return (gamepad2.dpad_right || gamepad1.dpad_right || gamepad1.b);
+        return false;
+    }
+
+    @Override
+    public boolean openLatch() {
+        return gamepad1.dpad_right;
     }
 
     @Override
     public boolean flipToMin() {
-        return gamepad2.a;
+        return gamepad2.dpad_right;
     }
 
     @Override
@@ -237,5 +239,10 @@ public class TandemMapping extends ControlMapping {
     @Override
     public void setIntakeDir(int dir) {
         spinDir = dir;
+    }
+
+    @Override
+    public boolean quickReverse() {
+        return stickyGamepad2.a;
     }
 }
