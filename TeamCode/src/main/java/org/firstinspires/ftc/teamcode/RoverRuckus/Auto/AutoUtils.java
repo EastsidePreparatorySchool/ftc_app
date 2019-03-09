@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.DriveSystems.Mecanum.RoadRunner.SampleMecanumDriveREV;
@@ -19,6 +20,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
 
     public static double MARKER_DEPLOYER_DEPLOY = 0;
     public static double MARKER_DEPLOYER_RETRACTED = 0.85;
+    public static int MS_TO_WAIT_AFTER_TURN = 100;
 
     public static double PARKING_MARKER_EXTENDED = 1;
     public static double PARKING_MARKER_RETRACTED = 0;
@@ -46,6 +48,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         // In the first phase, we will lower the robot "manually"
         // In the second phase, we will just freefall to be faster
 
+        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.LIGHT_CHASE_RED);
         robot.updateReadings();
         robot.winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.winch.setPower(1);
@@ -74,6 +77,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         return boundingBox.x + (boundingBox.width / 2);
     }
     public void followPath(SampleMecanumDriveREV drive, Trajectory trajectory) {
+        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_RED);
         drive.followTrajectory(trajectory);
         while (!isStopRequested() && drive.isFollowingTrajectory()) {
             drive.update();
@@ -85,6 +89,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
     }
 
     public void turnToPos(double pos, int forcedDir) {
+        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE);
         double difference = Double.MAX_VALUE;
 
         while (Math.abs(difference) > ACCEPTABLE_HEADING_VARIATION && opModeIsActive()) {
@@ -118,7 +123,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         }
         stopMoving();
         Log.i("AutoUtils", "Finished turn at " + robot.getHeading());
-        robot.sleep(400);
+        robot.sleep(MS_TO_WAIT_AFTER_TURN);
         if (Math.abs(robot.getSignedAngleDifference(pos, robot.getHeading())) > ACCEPTABLE_HEADING_VARIATION) {
             turnToPos(pos);
         }

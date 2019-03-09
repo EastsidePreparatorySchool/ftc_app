@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.RoverRuckus.Auto;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.drive.MecanumDrive;
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.DriveSystems.Mecanum.RoadRunner.SampleMecanumDriveREV;
 import org.firstinspires.ftc.teamcode.Mechanisms.SparkyTheRobot;
@@ -15,25 +18,41 @@ public abstract class SuperiorSampling extends AutoUtils {
 
     public EndGoal goal;
     public static int position = -1;
+    public static int MS_UNTIL_ENTER_DEPO = 13 * 1000;
+    public static int TARGET_ARM_POS = 1000;
+    public static int MS_BEFORE_MOVE_INTAKE_SWAP = 1000;
+    public static int MS_BEFORE_END_SWAP = 1500;
 
-    public void switchAppendagePositions() {
+    public void beginAppendageSwap() {
         robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.winch.setPower(1);
         robot.winch.setTargetPosition(-1500);
+        robot.leftFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        robot.rightFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        robot.leftFlipper.setPower(0.4);
+        robot.rightFlipper.setPower(0.4);
+        robot.leftFlipper.setTargetPosition(TARGET_ARM_POS);
+        robot.rightFlipper.setTargetPosition(TARGET_ARM_POS);
+    }
 
-        robot.intake.collect();
-
-        robot.sleep(2500);
-
+    public void endAppendageSwap() {
         robot.winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.winch.setPower(0);
-        refoldMechanisms();
+    }
+
+    public void switchAppendagePositions() {
+        beginAppendageSwap();
+        robot.sleep(MS_BEFORE_MOVE_INTAKE_SWAP);
+        robot.intake.collect();
+        robot.sleep(MS_BEFORE_END_SWAP);
+        endAppendageSwap();
     }
 
     @Override
     public void runOpMode() throws InterruptedException {
         // Set up road runner
         SampleMecanumDriveREV drive = new SampleMecanumDriveREV(hardwareMap);
+
         robot = new SparkyTheRobot(this);
         robot.calibrate(true);
         robot.markerDeployer.setPosition(MARKER_DEPLOYER_RETRACTED);
@@ -48,6 +67,8 @@ public abstract class SuperiorSampling extends AutoUtils {
         telemetry.update();
 
         GoldPosition goldLoc = waitAndWatchMinerals();
+        ElapsedTime timeSinceStart = new ElapsedTime();
+
         if (isStopRequested()) return;
 
         if (position == 0) {
@@ -71,6 +92,10 @@ public abstract class SuperiorSampling extends AutoUtils {
         try {
             if (startingPosition == StartingPosition.DEPOT) {
                 followPath(drive, AssetsTrajectoryLoader.load("Depo" + goldLoc.fileName + "Sel"));
+                if (goldLoc == GoldPosition.RIGHT) {
+                    turnToPos(Math.PI * 0.5);
+                    followPath(drive, AssetsTrajectoryLoader.load("DepoRightSelP2"));
+                }
                 turnToPos(0);
                 followPath(drive, Paths.STRAFE_LEFT);
                 robot.markerDeployer.setPosition(MARKER_DEPLOYER_DEPLOY);
@@ -88,7 +113,14 @@ public abstract class SuperiorSampling extends AutoUtils {
                 }
                 turnToPos(Math.PI * 1.75);
                 followPath(drive, AssetsTrajectoryLoader.load("CraterBackup"));
-                turnToPos(Math.PI/4);
+                turnToPos(Math.PI / 4);
+
+                if (goal == EndGoal.BLUE_CRATER || goldLoc == GoldPosition.RIGHT) {
+                    // Wait as long as we can
+                    while (timeSinceStart.milliseconds() < MS_UNTIL_ENTER_DEPO &&
+                            opModeIsActive()) {
+                    }
+                }
                 followPath(drive, AssetsTrajectoryLoader.load("Crater" + goldLoc.fileName + "Dir"));
 
                 if (goal == EndGoal.BLUE_DOUBLE_SAMPLE || goldLoc == GoldPosition.RIGHT) {
@@ -111,17 +143,9 @@ public abstract class SuperiorSampling extends AutoUtils {
                     if (goldLoc != GoldPosition.RIGHT) {
                         turnToPos(0);
                         followPath(drive, Paths.DOUBLE_RETURN_TO_DEPO);
-                        robot.markerDeployer.setPosition(MARKER_DEPLOYER_DEPLOY);
-                        robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
-                        robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                        robot.winch.setPower(1);
-                        robot.winch.setTargetPosition(-1500);
-                        robot.intake.collect();
+                        beginAppendageSwap();
                         followPath(drive, Paths.DEPOT_TO_SAME_CRATER_SHORT);
-                        robot.winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                        robot.winch.setPower(0);
-                        refoldMechanisms();
-                        robot.sleep(500);
+                        endAppendageSwap();
                     } else {
                         robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
                     }
@@ -139,7 +163,5 @@ public abstract class SuperiorSampling extends AutoUtils {
             // TODO retry load
             e.printStackTrace();
         }
-
-        // Now we're parked by crater
     }
 }
