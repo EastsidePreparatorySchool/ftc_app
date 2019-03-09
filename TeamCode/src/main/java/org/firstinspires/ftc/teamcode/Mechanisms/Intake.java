@@ -14,7 +14,7 @@ public class Intake {
     public static double FOLD_UP_DIST = 0.0;
     public static double LOWER_ARM_DIST = 0.6;
 
-    public static double MAX_INTAKE_SPEED = -0.8;
+    public static double MAX_INTAKE_SPEED = 0.8;
 
     private boolean enabled;
 
