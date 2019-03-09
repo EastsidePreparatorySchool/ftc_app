@@ -23,7 +23,10 @@ import java.util.List;
 /**
  * Created by Victo on 9/10/2018.
  */
+@Config
 public class GoldDetector extends DogeCVDetector {
+
+    public static double cropAreaShift = 0.3;
 
     // Defining Mats to be used.
     private Mat displayMat = new Mat(); // Display debug info to the screen (this is what is returned)
@@ -57,7 +60,7 @@ public class GoldDetector extends DogeCVDetector {
     @Override
     public Mat process(Mat input) {
 
-        Rect boundingBox = new Rect(0, 0, input.cols(), input.rows()/2);
+        Rect boundingBox = new Rect(0, (int) Math.round(input.rows() * cropAreaShift), input.cols(), input.rows()/2);
         // Copy the input mat to our working mats, then release it for memory
         displayMat = new Mat(input, boundingBox);
         workingMat = new Mat(input, boundingBox);
