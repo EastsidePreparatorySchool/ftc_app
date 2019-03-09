@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Mechanisms.Arm;
 import org.firstinspires.ftc.teamcode.Mechanisms.Extender;
+import org.firstinspires.ftc.teamcode.Mechanisms.Intake;
 import org.firstinspires.ftc.teamcode.Mechanisms.SparkyTheRobot;
 import org.firstinspires.ftc.teamcode.RoverRuckus.Auto.AutoUtils;
 import org.firstinspires.ftc.teamcode.RoverRuckus.Mappings.ControlMapping;
@@ -57,18 +58,22 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static int MS_DELAY_EXTEND = 600;
 
     // How far up the winch should go
-    public static int WINCH_MAX_POS = 7200;
+    public static int WINCH_MAX_POS = 7700;
 
     // Where the robot will be facing when the "heading reset" button is clicked
     public static double HEADING_RESET_POSITION = Math.PI * 0.25;
 
     public static double CRATER_LANDER_DEPOSIT = Math.PI * 1.75;
     public static double CRATER_HANG = Math.PI * 0.75;
-    public static double DEPO_LANDER_DEPOSIT = CRATER_LANDER_DEPOSIT - Math.PI * 0.5;
-    public static double DEPO_HANG = CRATER_LANDER_DEPOSIT - Math.PI * 0.5;
+    public static double DEPO_LANDER_DEPOSIT = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
+    public static double DEPO_HANG = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
 
-    public static double BLOCK_TRAPPER_TRAPPING = 1;
-    public static double BLOCK_TRAPPER_PERMISSIVE = 0;
+    public static double BLOCK_TRAPPER_TRAPPING = 0.5;
+    public static double BLOCK_TRAPPER_PERMISSIVE = 0.73;
+
+    public static int MS_QUICK_REVERSE = 100;
+    public static double DIR_QUICK_REVERSE = 1;
+    int timeStopReversing;
 
     public static int TIME_MUST_HANG = 110;
     public static int TIME_GAMEPLAY_DONE = 120;
@@ -83,6 +88,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
     private boolean wasTurningTo255;
     private double headingOffset;
+    private int winchOffset;
 
     SparkyTheRobot robot;
     ElapsedTime loopTime;
@@ -104,6 +110,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         robot = new SparkyTheRobot(this);
         robot.calibrate(true);
         headingOffset = 0;
+        winchOffset = 0;
 
         loopTime = new ElapsedTime();
         timeMovingArmDown = new ElapsedTime();
@@ -112,6 +119,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         armIsCollecting = false;
         endgameActivities = false;
         timing = false;
+        timeStopReversing = -1;
 
         winch = new HoldingPIDMotor(robot.winch, 1);
 
@@ -125,8 +133,10 @@ public abstract class BaseTeleOp extends LinearOpMode {
         robot.winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Set up current reading classes
-        leftHubEx = hardwareMap.get(ExpansionHubEx.class, "leftHub");
-        rightHubEx = hardwareMap.get(ExpansionHubEx.class, "rightHub");
+        if (!robot.onRawChassis) {
+            leftHubEx = hardwareMap.get(ExpansionHubEx.class, "leftHub");
+            rightHubEx = hardwareMap.get(ExpansionHubEx.class, "rightHub");
+        }
 
         // Keep standard front direction
         for (int i = 0; i < 4; i++) {
@@ -218,12 +228,19 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 armIsCollecting = true;
             }
 
+
             if (controller.retakeControls()) {
                 armIsCollecting = true;
             }
 
             if (armIsCollecting) {
                 color = RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE;
+            }
+
+            if (controller.openLatch()) {
+                robot.blockTrapper.setPosition(BLOCK_TRAPPER_PERMISSIVE);
+            } else {
+                robot.blockTrapper.setPosition(BLOCK_TRAPPER_TRAPPING);
             }
 
             if (controller.shakeCamera()) {
@@ -234,9 +251,14 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             // Check to make sure
             int winchPower = controller.getHangDir();
-            if (!robot.hangSwitch.getState() && !controller.override()) {
+            if (!robot.hangSwitch.getState()) {
                 // If the switch is pressed (if it's not open)
-                winchPower = Math.max(winchPower, 0);
+                if (!controller.override()) {
+                    winchPower = Math.max(winchPower, 0);
+                }
+
+                // Adjust the hang mech offset
+                winchOffset = robot.winch.getTargetPosition();
             }
 
             winch.setPower(winchPower);
@@ -248,7 +270,16 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 robot.intake.goToMin();
             }
 
-            robot.intake.setIntakeSpeed(controller.getSpinSpeed());
+            if (controller.quickReverse()) {
+                robot.intake.setIntakeSpeed(Intake.MAX_INTAKE_SPEED * DIR_QUICK_REVERSE);
+                timeStopReversing = (int) timeSinceMatchStart.milliseconds() + MS_QUICK_REVERSE;
+
+            }
+
+            if (timeSinceMatchStart.milliseconds() > timeStopReversing) {
+                robot.intake.setIntakeSpeed(controller.getSpinSpeed());
+            }
+
 
             WheelDriveVector speeds = new WheelDriveVector(controller.driveStickY(),
                     controller.driveStickX(), controller.turnSpeed());
@@ -303,7 +334,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (controller.lockTo225() && !wasTurningTo255) {
                 wasTurningTo255 = true;
-                winch.setTargetPos(WINCH_MAX_POS);
+                winch.setTargetPos(WINCH_MAX_POS + winchOffset);
             } else if (wasTurningTo255 && !controller.lockTo225()) {
                 wasTurningTo255 = false;
             }
@@ -319,18 +350,19 @@ public abstract class BaseTeleOp extends LinearOpMode {
             }
 
             // Set LEDs
-            double servoCurrent = leftHubEx.getServoBusCurrentDraw() +
-                    rightHubEx.getServoBusCurrentDraw();
-
-            if (servoCurrent > SERVO_CURRENT_THRESHOLD) {
-                color = RevBlinkinLedDriver.BlinkinPattern.STROBE_WHITE;
+            if (!robot.onRawChassis) {
+                double servoCurrent = leftHubEx.getServoBusCurrentDraw() +
+                        rightHubEx.getServoBusCurrentDraw();
+                if (servoCurrent > SERVO_CURRENT_THRESHOLD) {
+                    color = RevBlinkinLedDriver.BlinkinPattern.STROBE_WHITE;
+                }
+                robot.leds.setPattern(color);
+                telemetry.addData("Servo current", servoCurrent);
             }
-            robot.leds.setPattern(color);
 
             // Telemetry
             //feedback.updateTelemetry(telemetry);
             telemetry.addData("Time", Math.round(timeSinceMatchStart.seconds()));
-            telemetry.addData("Servo current", servoCurrent);
             int pos = (robot.leftFlipper.getCurrentPosition() + robot.rightFlipper.getCurrentPosition()) / 2;
             telemetry.addData("Arm position", pos);
             telemetry.addData("Drive stick y", controller.driveStickY());
