@@ -26,7 +26,7 @@ import java.util.List;
 @Config
 public class GoldDetector extends DogeCVDetector {
 
-    public static double cropAreaShift = 0.3;
+    public static double cropAreaShift = 0.1;
 
     // Defining Mats to be used.
     private Mat displayMat = new Mat(); // Display debug info to the screen (this is what is returned)

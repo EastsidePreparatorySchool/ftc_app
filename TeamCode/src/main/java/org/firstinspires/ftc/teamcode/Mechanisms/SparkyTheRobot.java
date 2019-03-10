@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.Mechanisms;
 
+import android.graphics.Color;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
@@ -14,6 +16,7 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import org.firstinspires.ftc.teamcode.Hardware.MecanumHardware;
 import org.firstinspires.ftc.teamcode.Utilities.Audio.SoundEffectManager;
+import org.firstinspires.ftc.teamcode.Utilities.Control.LEDRiver;
 import org.firstinspires.ftc.teamcode.Utilities.Mocking.DcMotorExMock;
 import org.firstinspires.ftc.teamcode.Utilities.Mocking.DigitalChannelMock;
 import org.firstinspires.ftc.teamcode.Utilities.Mocking.IntakeMock;
@@ -37,7 +40,7 @@ public class SparkyTheRobot extends MecanumHardware {
     private Servo cameraFlipper;
     public Servo blockTrapper;
     public CameraFlipper cameraPositioner;
-    public RevBlinkinLedDriver leds;
+    public LEDRiver ledRiver;
 
     // Sensors
     public DigitalChannel hangSwitch;
@@ -48,7 +51,12 @@ public class SparkyTheRobot extends MecanumHardware {
     public SparkyTheRobot(LinearOpMode oM) {
         super(oM);
         try {
-            leds = hwMap.get(RevBlinkinLedDriver.class, "leds");
+            ledRiver = hwMap.get(LEDRiver.IMPL, "leds");
+            ledRiver.setMode(LEDRiver.Mode.SOLID);
+            ledRiver.setLEDMode(LEDRiver.LEDMode.RGB);
+            ledRiver.setColorDepth(LEDRiver.ColorDepth.BIT_24);
+            ledRiver.apply();
+
             rightHub = hwMap.get(LynxModule.class, "rightHub");
 
             leftFlipper = hwMap.get(DcMotorEx.class, "flipperLeft");
@@ -103,7 +111,9 @@ public class SparkyTheRobot extends MecanumHardware {
     }
 
     public void calibrate(boolean calibrateGyros) {
-        leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.LARSON_SCANNER_RED);
+        ledRiver.setMode(LEDRiver.Mode.PATTERN)
+                .setPattern(LEDRiver.Pattern.BREATHING.builder())
+                .setColor(Color.RED).apply();
         DcMotor[] motors =
                 new DcMotor[] {leftFlipper, rightFlipper, winch, linearSlide,
                 frontLeft, frontRight, backLeft, backRight};
@@ -125,6 +135,6 @@ public class SparkyTheRobot extends MecanumHardware {
         for (DcMotor m : motors) {
             m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_RED);
+        ledRiver.setColor(Color.BLUE).apply();
     }
 }

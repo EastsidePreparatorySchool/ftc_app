@@ -48,7 +48,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         // In the first phase, we will lower the robot "manually"
         // In the second phase, we will just freefall to be faster
 
-        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.LIGHT_CHASE_RED);
+        //robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.LIGHT_CHASE_RED);
         robot.updateReadings();
         robot.winch.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.winch.setPower(1);
@@ -77,7 +77,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         return boundingBox.x + (boundingBox.width / 2);
     }
     public void followPath(SampleMecanumDriveREV drive, Trajectory trajectory) {
-        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_RED);
+        //robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_RED);
         drive.followTrajectory(trajectory);
         while (!isStopRequested() && drive.isFollowingTrajectory()) {
             drive.update();
@@ -89,7 +89,7 @@ public abstract class AutoUtils extends VuforiaCVUtil {
     }
 
     public void turnToPos(double pos, int forcedDir) {
-        robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE);
+        //robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE);
         double difference = Double.MAX_VALUE;
 
         while (Math.abs(difference) > ACCEPTABLE_HEADING_VARIATION && opModeIsActive()) {

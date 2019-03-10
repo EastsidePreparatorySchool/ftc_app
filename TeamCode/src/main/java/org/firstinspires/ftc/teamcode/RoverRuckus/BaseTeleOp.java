@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.RoverRuckus;
 
+import android.graphics.Color;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -15,24 +17,13 @@ import org.firstinspires.ftc.teamcode.RoverRuckus.Auto.AutoUtils;
 import org.firstinspires.ftc.teamcode.RoverRuckus.Mappings.ControlMapping;
 import org.firstinspires.ftc.teamcode.Utilities.Control.FeedbackController;
 import org.firstinspires.ftc.teamcode.Utilities.Control.HoldingPIDMotor;
+import org.firstinspires.ftc.teamcode.Utilities.Control.LEDRiver;
 import org.firstinspires.ftc.teamcode.Utilities.Control.WheelDriveVector;
 import org.openftc.revextensions2.ExpansionHubEx;
 import org.openftc.revextensions2.RevExtensions2;
 
 @Config
 public abstract class BaseTeleOp extends LinearOpMode {
-
-    RevBlinkinLedDriver.BlinkinPattern[] severityPatterns = {
-            RevBlinkinLedDriver.BlinkinPattern.RED,
-            RevBlinkinLedDriver.BlinkinPattern.RED_ORANGE,
-            RevBlinkinLedDriver.BlinkinPattern.ORANGE,
-            RevBlinkinLedDriver.BlinkinPattern.YELLOW,
-            RevBlinkinLedDriver.BlinkinPattern.LAWN_GREEN,
-            RevBlinkinLedDriver.BlinkinPattern.DARK_GREEN,
-            RevBlinkinLedDriver.BlinkinPattern.BLUE_GREEN,
-            RevBlinkinLedDriver.BlinkinPattern.BLUE,
-            RevBlinkinLedDriver.BlinkinPattern.STROBE_BLUE,
-    };
 
     // How much current we need to draw before we increase our severity
     public static double SERVO_CURRENT_THRESHOLD = 2800; // 2.8 A
@@ -53,6 +44,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
     // with at least the power stated below
     public static int MS_USE_DOWN_MACROS = 500;
     public static int MS_USE_UP_MACROS = 900;
+    public static int MS_OPEN_LATCH = 1200;
     public static double POWER_USE_UP_DOWN_MACROS = 0.3;
 
     public static int MS_DELAY_EXTEND = 600;
@@ -158,13 +150,16 @@ public abstract class BaseTeleOp extends LinearOpMode {
         robot.markerDeployer.setPosition(AutoUtils.MARKER_DEPLOYER_RETRACTED);
         robot.parkingMarker.setPosition(AutoUtils.PARKING_MARKER_RETRACTED);
         loopTime.reset();
+        robot.ledRiver.setMode(LEDRiver.Mode.PATTERN).apply();
 
         while (opModeIsActive()) {
             controller.update();
 
             // We will have a hierarchical set of colors
             // Here is the default color
-            RevBlinkinLedDriver.BlinkinPattern color = RevBlinkinLedDriver.BlinkinPattern.BREATH_RED;
+            robot.ledRiver.setMode(LEDRiver.Mode.PATTERN)
+                    .setPattern(LEDRiver.Pattern.BREATHING.builder())
+                    .setColor(Color.RED);
 
             // For macro move up and down, perform shortcuts
             if (controller.collectWithArm()) {
@@ -222,10 +217,14 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 controller.setIntakeDir(-1);
                 armIsCollecting = false;
             }
+            if (timeMovingArmUp.milliseconds() > MS_OPEN_LATCH) {
+                robot.blockTrapper.setPosition(BLOCK_TRAPPER_PERMISSIVE);
+            }
             if (timeMovingArmDown.milliseconds() > MS_USE_DOWN_MACROS) {
                 extender.goToCollect();
                 controller.setIntakeDir(-1);
                 armIsCollecting = true;
+                robot.blockTrapper.setPosition(BLOCK_TRAPPER_TRAPPING);
             }
 
 
@@ -234,7 +233,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
             }
 
             if (armIsCollecting) {
-                color = RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE;
+                robot.ledRiver.setPattern(LEDRiver.Pattern.BREATHING.builder())
+                        .setColor(Color.BLUE);
             }
 
             if (controller.openLatch()) {
@@ -343,9 +343,11 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (timing) {
                 if (timeSinceMatchStart.seconds() > TIME_GAMEPLAY_DONE) {
-                    color = RevBlinkinLedDriver.BlinkinPattern.COLOR_WAVES_LAVA_PALETTE;
+                    robot.ledRiver.setPattern(LEDRiver.Pattern.BREATHING.builder())
+                            .setColor(Color.WHITE);
                 } else if (timeSinceMatchStart.seconds() > TIME_MUST_HANG) {
-                    color = RevBlinkinLedDriver.BlinkinPattern.CP1_HEARTBEAT_FAST;
+                    robot.ledRiver.setPattern(LEDRiver.Pattern.RUNNING.builder())
+                            .setColor(Color.RED);
                 }
             }
 
@@ -354,14 +356,15 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 double servoCurrent = leftHubEx.getServoBusCurrentDraw() +
                         rightHubEx.getServoBusCurrentDraw();
                 if (servoCurrent > SERVO_CURRENT_THRESHOLD) {
-                    color = RevBlinkinLedDriver.BlinkinPattern.STROBE_WHITE;
+                    robot.ledRiver.setPattern(LEDRiver.Pattern.STROBE.builder())
+                            .setColor(Color.WHITE);
                 }
-                robot.leds.setPattern(color);
+
                 telemetry.addData("Servo current", servoCurrent);
             }
+            robot.ledRiver.apply();
 
             // Telemetry
-            //feedback.updateTelemetry(telemetry);
             telemetry.addData("Time", Math.round(timeSinceMatchStart.seconds()));
             int pos = (robot.leftFlipper.getCurrentPosition() + robot.rightFlipper.getCurrentPosition()) / 2;
             telemetry.addData("Arm position", pos);
