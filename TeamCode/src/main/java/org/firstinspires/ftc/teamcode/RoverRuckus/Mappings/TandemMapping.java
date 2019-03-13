@@ -151,7 +151,7 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean openLatch() {
-        return gamepad1.dpad_right;
+        return gamepad1.right_trigger > 0.3;
     }
 
     @Override

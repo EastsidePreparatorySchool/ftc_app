@@ -39,7 +39,6 @@ public class SparkyTheRobot extends MecanumHardware {
     public Servo parkingMarker;
     private Servo cameraFlipper;
     public Servo blockTrapper;
-    public CameraFlipper cameraPositioner;
     public LEDRiver ledRiver;
 
     // Sensors
@@ -75,7 +74,6 @@ public class SparkyTheRobot extends MecanumHardware {
             cameraFlipper = hwMap.get(ServoImplEx.class, "cameraFlipper");
             parkingMarker = hwMap.get(ServoImplEx.class, "parkingMarker");
             blockTrapper = hwMap.get(ServoImplEx.class, "blockTrapper");
-            cameraPositioner = new CameraFlipper(cameraFlipper);
 
             hangSwitch = hwMap.get(DigitalChannelImpl.class, "hangSwitch");
             hangSwitch.setMode(DigitalChannel.Mode.INPUT);
@@ -101,7 +99,6 @@ public class SparkyTheRobot extends MecanumHardware {
             // We don't need to mock LEDs
 
             intake = new IntakeMock(null, null, null, null);
-            cameraPositioner = new CameraFlipper(new ServoMock());
             hangSwitch = new DigitalChannelMock();
             slideSwitch = new DigitalChannelMock();
             onRawChassis = true;

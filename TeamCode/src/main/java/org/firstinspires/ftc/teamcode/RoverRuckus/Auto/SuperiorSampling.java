@@ -20,17 +20,18 @@ public abstract class SuperiorSampling extends AutoUtils {
     public static int position = -1;
     public static int MS_UNTIL_ENTER_DEPO = 13 * 1000;
     public static int TARGET_ARM_POS = 1000;
-    public static int MS_BEFORE_MOVE_INTAKE_SWAP = 1000;
-    public static int MS_BEFORE_END_SWAP = 1500;
+    public static int MS_BEFORE_MOVE_INTAKE_SWAP = 750;
+    public static int MS_BEFORE_END_SWAP = 2000;
+    public static int WINCH_TARGET_POS = -1500;
 
     public void beginAppendageSwap() {
         robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.winch.setPower(1);
-        robot.winch.setTargetPosition(-1500);
+        robot.winch.setTargetPosition(WINCH_TARGET_POS);
         robot.leftFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        robot.leftFlipper.setPower(0.4);
-        robot.rightFlipper.setPower(0.4);
+        robot.leftFlipper.setPower(0.5);
+        robot.rightFlipper.setPower(0.5);
         robot.leftFlipper.setTargetPosition(TARGET_ARM_POS);
         robot.rightFlipper.setTargetPosition(TARGET_ARM_POS);
     }
@@ -44,7 +45,9 @@ public abstract class SuperiorSampling extends AutoUtils {
         beginAppendageSwap();
         robot.sleep(MS_BEFORE_MOVE_INTAKE_SWAP);
         robot.intake.collect();
-        robot.sleep(MS_BEFORE_END_SWAP);
+        ElapsedTime timeTillForceStop = new ElapsedTime();
+        while (timeTillForceStop.milliseconds() < MS_BEFORE_END_SWAP
+                && robot.hangSwitch.getState() && opModeIsActive()) {}
         endAppendageSwap();
     }
 
@@ -88,7 +91,6 @@ public abstract class SuperiorSampling extends AutoUtils {
         }
         telemetry.log().add("Heading before driving: " + robot.getGyroHeading());
 
-        robot.cameraPositioner.flipDown();
         try {
             if (startingPosition == StartingPosition.DEPOT) {
                 followPath(drive, AssetsTrajectoryLoader.load("Depo" + goldLoc.fileName + "Sel"));
@@ -117,9 +119,7 @@ public abstract class SuperiorSampling extends AutoUtils {
 
                 if (goal == EndGoal.BLUE_CRATER || goldLoc == GoldPosition.RIGHT) {
                     // Wait as long as we can
-                    while (timeSinceStart.milliseconds() < MS_UNTIL_ENTER_DEPO &&
-                            opModeIsActive()) {
-                    }
+                    robot.sleep((long) Math.max(0, MS_UNTIL_ENTER_DEPO - timeSinceStart.milliseconds()));
                 }
                 followPath(drive, AssetsTrajectoryLoader.load("Crater" + goldLoc.fileName + "Dir"));
 

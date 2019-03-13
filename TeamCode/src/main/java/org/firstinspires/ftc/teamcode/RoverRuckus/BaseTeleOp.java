@@ -60,8 +60,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static double DEPO_LANDER_DEPOSIT = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
     public static double DEPO_HANG = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
 
-    public static double BLOCK_TRAPPER_TRAPPING = 0.5;
-    public static double BLOCK_TRAPPER_PERMISSIVE = 0.73;
+    public static double BLOCK_TRAPPER_TRAPPING = 0.3;
+    public static double BLOCK_TRAPPER_PERMISSIVE = 0;
 
     public static int MS_QUICK_REVERSE = 100;
     public static double DIR_QUICK_REVERSE = 1;
@@ -103,6 +103,10 @@ public abstract class BaseTeleOp extends LinearOpMode {
         robot.calibrate(true);
         headingOffset = 0;
         winchOffset = 0;
+
+        double desiredHeading;
+        ElapsedTime timeUntilLockHeading = new ElapsedTime();
+
 
         loopTime = new ElapsedTime();
         timeMovingArmDown = new ElapsedTime();
@@ -216,15 +220,11 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 extender.goToMax();
                 controller.setIntakeDir(-1);
                 armIsCollecting = false;
-            }
-            if (timeMovingArmUp.milliseconds() > MS_OPEN_LATCH) {
-                robot.blockTrapper.setPosition(BLOCK_TRAPPER_PERMISSIVE);
+                robot.intake.deposit();
             }
             if (timeMovingArmDown.milliseconds() > MS_USE_DOWN_MACROS) {
-                extender.goToCollect();
                 controller.setIntakeDir(-1);
                 armIsCollecting = true;
-                robot.blockTrapper.setPosition(BLOCK_TRAPPER_TRAPPING);
             }
 
 
@@ -243,12 +243,6 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 robot.blockTrapper.setPosition(BLOCK_TRAPPER_TRAPPING);
             }
 
-            if (controller.shakeCamera()) {
-                robot.cameraPositioner.flipUp();
-            } else {
-                robot.cameraPositioner.flipDown();
-            }
-
             // Check to make sure
             int winchPower = controller.getHangDir();
             if (!robot.hangSwitch.getState()) {
@@ -258,7 +252,9 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 }
 
                 // Adjust the hang mech offset
-                winchOffset = robot.winch.getTargetPosition();
+                if (!winch.isBusy()) {
+                    winchOffset = robot.winch.getTargetPosition();
+                }
             }
 
             winch.setPower(winchPower);
