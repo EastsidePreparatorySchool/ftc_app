@@ -104,7 +104,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         headingOffset = 0;
         winchOffset = 0;
 
-        double desiredHeading;
+        double targetAngle;
         ElapsedTime timeUntilLockHeading = new ElapsedTime();
 
 
@@ -149,6 +149,8 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
         // Intake flipper servos are disabled by default
         waitForStart();
+        targetAngle = robot.getHeading();
+
         ElapsedTime timeSinceMatchStart = new ElapsedTime();
 
         robot.markerDeployer.setPosition(AutoUtils.MARKER_DEPLOYER_RETRACTED);
@@ -277,6 +279,10 @@ public abstract class BaseTeleOp extends LinearOpMode {
             }
 
 
+            if (controller.turnSpeed() > 0.2) {
+                timeUntilLockHeading.reset();
+            }
+
             WheelDriveVector speeds = new WheelDriveVector(controller.driveStickY(),
                     controller.driveStickX(), controller.turnSpeed());
 
@@ -306,27 +312,26 @@ public abstract class BaseTeleOp extends LinearOpMode {
                 hangOnCrater = true;
             }
             // Control heading locking
-            if (controller.lockTo45() || controller.lockTo225()) {
-                // Pressing y overrides lock to 45
-                double targetAngle = 0;
-                if (controller.lockTo45() && hangOnCrater) {
-                    targetAngle = CRATER_LANDER_DEPOSIT;
-                } else if (controller.lockTo225() && hangOnCrater) {
-                    targetAngle = CRATER_HANG;
-                    endgameActivities = true;
-                } else if (controller.lockTo45() && !hangOnCrater) {
-                    targetAngle = DEPO_LANDER_DEPOSIT;
-                } else {
-                    targetAngle = DEPO_HANG;
-                    endgameActivities = true;
-                }
-
-                double difference = robot.getSignedAngleDifference(targetAngle, robot.normAngle(robot.getHeading() - headingOffset));
-                double turnSpeed = Math.max(-TURN_MAX_SPEED, Math.min(TURN_MAX_SPEED,
-                        difference * TURN_CORRECT_FACTOR));
-                turnSpeed = Math.copySign(Math.max(TURN_SPEED_CUTOFF, Math.abs(turnSpeed)), turnSpeed);
-                speeds.turnSpeed = -turnSpeed;
+            // Pressing y overrides lock to 45
+            if (controller.lockTo45() && hangOnCrater) {
+                targetAngle = CRATER_LANDER_DEPOSIT;
+            } else if (controller.lockTo225() && hangOnCrater) {
+                targetAngle = CRATER_HANG;
+                endgameActivities = true;
+            } else if (controller.lockTo45() && !hangOnCrater) {
+                targetAngle = DEPO_LANDER_DEPOSIT;
+            } else if (controller.lockTo225() && !hangOnCrater){
+                targetAngle = DEPO_HANG;
+                endgameActivities = true;
+            } else if (timeUntilLockHeading.milliseconds() < 500) {
+                targetAngle = robot.getHeading();
             }
+
+            double difference = robot.getSignedAngleDifference(targetAngle, robot.normAngle(robot.getHeading() - headingOffset));
+            double turnSpeed = Math.max(-TURN_MAX_SPEED, Math.min(TURN_MAX_SPEED,
+                    difference * TURN_CORRECT_FACTOR));
+            turnSpeed = Math.copySign(Math.max(TURN_SPEED_CUTOFF, Math.abs(turnSpeed)), turnSpeed);
+            speeds.turnSpeed -= turnSpeed;
 
             if (controller.lockTo225() && !wasTurningTo255) {
                 wasTurningTo255 = true;
