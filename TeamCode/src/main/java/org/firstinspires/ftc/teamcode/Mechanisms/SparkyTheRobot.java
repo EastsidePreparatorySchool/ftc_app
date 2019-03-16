@@ -108,9 +108,9 @@ public class SparkyTheRobot extends MecanumHardware {
     }
 
     public void calibrate(boolean calibrateGyros) {
-        ledRiver.setMode(LEDRiver.Mode.PATTERN)
+        /*ledRiver.setMode(LEDRiver.Mode.PATTERN)
                 .setPattern(LEDRiver.Pattern.BREATHING.builder())
-                .setColor(Color.RED).apply();
+                .setColor(Color.RED).apply();*/
         DcMotor[] motors =
                 new DcMotor[] {leftFlipper, rightFlipper, winch, linearSlide,
                 frontLeft, frontRight, backLeft, backRight};
@@ -132,6 +132,6 @@ public class SparkyTheRobot extends MecanumHardware {
         for (DcMotor m : motors) {
             m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        ledRiver.setColor(Color.BLUE).apply();
+        //ledRiver.setColor(Color.BLUE).apply();
     }
 }

@@ -19,21 +19,29 @@ public abstract class SuperiorSampling extends AutoUtils {
     public EndGoal goal;
     public static int position = -1;
     public static int MS_UNTIL_ENTER_DEPO = 13 * 1000;
-    public static int TARGET_ARM_POS = 1000;
+    public static int TARGET_ARM_POS = 2000;
+    public static int ARM_POS_45 = 1000;
     public static int MS_BEFORE_MOVE_INTAKE_SWAP = 750;
-    public static int MS_BEFORE_END_SWAP = 2000;
-    public static int WINCH_TARGET_POS = -1500;
+    public static int MS_BEFORE_END_SWAP = 5000;
 
     public void beginAppendageSwap() {
-        robot.winch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        robot.winch.setPower(1);
-        robot.winch.setTargetPosition(WINCH_TARGET_POS);
+        robot.winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.winch.setPower(-0.5);
         robot.leftFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightFlipper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.leftFlipper.setPower(0.5);
         robot.rightFlipper.setPower(0.5);
-        robot.leftFlipper.setTargetPosition(TARGET_ARM_POS);
-        robot.rightFlipper.setTargetPosition(TARGET_ARM_POS);
+        if (goal == EndGoal.BLUE_CRATER) {
+            robot.leftFlipper.setTargetPosition(ARM_POS_45);
+            robot.rightFlipper.setTargetPosition(ARM_POS_45);
+        } else {
+            robot.leftFlipper.setTargetPosition(TARGET_ARM_POS);
+            robot.rightFlipper.setTargetPosition(TARGET_ARM_POS);
+        }
+    }
+
+    public void speedifyWinch() {
+        robot.winch.setPower(-1);
     }
 
     public void endAppendageSwap() {
@@ -45,6 +53,7 @@ public abstract class SuperiorSampling extends AutoUtils {
         beginAppendageSwap();
         robot.sleep(MS_BEFORE_MOVE_INTAKE_SWAP);
         robot.intake.collect();
+        speedifyWinch();
         ElapsedTime timeTillForceStop = new ElapsedTime();
         while (timeTillForceStop.milliseconds() < MS_BEFORE_END_SWAP
                 && robot.hangSwitch.getState() && opModeIsActive()) {}
@@ -62,6 +71,7 @@ public abstract class SuperiorSampling extends AutoUtils {
         robot.parkingMarker.setPosition(PARKING_MARKER_RETRACTED);
         initVuforia();
         setWinchHoldPosition();
+        robot.intake.goToMin();
 
         // Display telemetry feedback
         telemetry.log().add("Running sophisticated sampling op-mode");
@@ -142,10 +152,26 @@ public abstract class SuperiorSampling extends AutoUtils {
 
                     if (goldLoc != GoldPosition.RIGHT) {
                         turnToPos(0);
-                        followPath(drive, Paths.DOUBLE_RETURN_TO_DEPO);
                         beginAppendageSwap();
+
+                        new java.util.Timer().schedule(
+                                new java.util.TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        robot.intake.collect();
+                                        speedifyWinch();
+                                    }
+                                },
+                                MS_BEFORE_MOVE_INTAKE_SWAP
+                        );
+                        followPath(drive, Paths.DOUBLE_RETURN_TO_DEPO);
                         robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
-                        followPath(drive, Paths.DEPOT_TO_SAME_CRATER_SHORT);
+                        robot.markerDeployer.setPosition(MARKER_DEPLOYER_DEPLOY);
+                        followPathWatchingWinch(drive, Paths.DEPOT_TO_SAME_CRATER_SHORT);
+                        while (opModeIsActive() && timeSinceStart.seconds() <= 30 &&
+                                robot.hangSwitch.getState()) {
+                            // Do nothing and wait for hang mech to reach ground
+                        }
                         endAppendageSwap();
                     } else {
                         robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
@@ -158,6 +184,8 @@ public abstract class SuperiorSampling extends AutoUtils {
                     // can slide into crater
                     robot.parkingMarker.setPosition(PARKING_MARKER_EXTENDED);
                     followPath(drive, Paths.DEPOT_TO_SAME_CRATER);
+                    robot.leftFlipper.setTargetPosition(TARGET_ARM_POS);
+                    robot.rightFlipper.setTargetPosition(TARGET_ARM_POS);
                 }
             }
         } catch (IOException e) {

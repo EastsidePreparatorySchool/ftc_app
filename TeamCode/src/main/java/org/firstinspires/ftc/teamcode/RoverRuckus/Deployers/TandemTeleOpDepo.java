@@ -10,6 +10,7 @@ public class TandemTeleOpDepo extends BaseTeleOp {
     @Override
     public void runOpMode() {
         this.controller = new TandemMapping(gamepad1, gamepad2);
+        TandemMapping.MAX_MOVE_SPEED = 1.0;
         this.fieldCentric = false;
         this.hangOnCrater = false;
         this.timing = true;

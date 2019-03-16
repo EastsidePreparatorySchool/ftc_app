@@ -19,6 +19,7 @@ public class TandemMapping extends ControlMapping {
 
     public static double EXPONENT = 2;
     public static double TURN_SPEED_FACTOR = 0.8;
+    public static int STRAFE_FACTOR = 1;
 
     public static double HANG_SLOW_SPEED = 0.3;
 
@@ -45,7 +46,7 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public double driveStickY() {
-        return exp(gamepad1.left_stick_y);
+        return exp(gamepad1.left_stick_y) * STRAFE_FACTOR;
     }
 
     @Override
@@ -191,7 +192,7 @@ public class TandemMapping extends ControlMapping {
             g1x_down = false;
         }
 
-        if ((gamepad2.b && !g2b_down)/* || (gamepad1.b && !g1b_down)*/) {
+        /*if (gamepad2.b && !g2b_down) {
 
             // X was just pressed
             spinDir = (spinDir == 1) ? 0 : 1;
@@ -207,7 +208,7 @@ public class TandemMapping extends ControlMapping {
         }
         if (!gamepad1.b && g1b_down) {
             g1b_down = false;
-        }
+        }*/
 
         if (spinDir == 1) {
             return spinDir * BACKWARDS_INTAKE_SPEED;
@@ -243,6 +244,6 @@ public class TandemMapping extends ControlMapping {
 
     @Override
     public boolean quickReverse() {
-        return stickyGamepad2.a;
+        return gamepad2.b;
     }
 }

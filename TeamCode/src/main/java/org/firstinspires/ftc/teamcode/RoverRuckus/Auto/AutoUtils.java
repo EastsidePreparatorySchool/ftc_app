@@ -84,12 +84,21 @@ public abstract class AutoUtils extends VuforiaCVUtil {
         }
     }
 
+    public void followPathWatchingWinch(SampleMecanumDriveREV drive, Trajectory trajectory) {
+        drive.followTrajectory(trajectory);
+        while (!isStopRequested() && drive.isFollowingTrajectory()) {
+            drive.update();
+            if (!robot.hangSwitch.getState()) {
+                robot.winch.setPower(0);
+            }
+        }
+    }
+
     public void turnToPos(double pos) {
         turnToPos(pos, 0);
     }
 
     public void turnToPos(double pos, int forcedDir) {
-        //robot.leds.setPattern(RevBlinkinLedDriver.BlinkinPattern.BREATH_BLUE);
         double difference = Double.MAX_VALUE;
 
         while (Math.abs(difference) > ACCEPTABLE_HEADING_VARIATION && opModeIsActive()) {

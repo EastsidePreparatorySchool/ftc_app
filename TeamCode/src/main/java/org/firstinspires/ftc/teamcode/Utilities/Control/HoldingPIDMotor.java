@@ -44,6 +44,10 @@ public class HoldingPIDMotor {
         m.setPower(0);
     }
 
+    public int getErr() {
+        return Math.abs(m.getTargetPosition() - m.getCurrentPosition());
+    }
+
     public boolean isBusy() {
         return m.isBusy();
     }

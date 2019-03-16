@@ -9,8 +9,8 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 @Config
 public class Intake {
-    public static double DEPOSIT_DIST = 0.65;
-    public static double COLLECT_DIST = 0.65;
+    public static double DEPOSIT_DIST = 0.55;
+    public static double COLLECT_DIST = 0.55;
     public static double FOLD_UP_DIST = 0.15;
     public static double LOWER_ARM_DIST = 0.6;
 

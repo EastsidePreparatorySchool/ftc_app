@@ -9,6 +9,7 @@ public class TandemTeleOpCrater extends BaseTeleOp {
     @Override
     public void runOpMode() {
         this.controller = new TandemMapping(gamepad1, gamepad2);
+        TandemMapping.MAX_MOVE_SPEED = 0.8;
         this.fieldCentric = false;
         this.hangOnCrater = true;
         this.timing = true;

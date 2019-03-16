@@ -27,6 +27,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
     // How much current we need to draw before we increase our severity
     public static double SERVO_CURRENT_THRESHOLD = 2800; // 2.8 A
+    public static double EXTEND_CURRENT_THRESHOLD = 2000; // 2.0 A
 
     // How fast the robot moves when the arm is fully extended/retracted
     public static double EXTEND_MAXED_DRIVE_POWER = 0.6;
@@ -53,22 +54,23 @@ public abstract class BaseTeleOp extends LinearOpMode {
     public static int WINCH_MAX_POS = 7700;
 
     // Where the robot will be facing when the "heading reset" button is clicked
-    public static double HEADING_RESET_POSITION = Math.PI * 0.25;
+    public static double CRATER_HEADING_RESET = Math.PI * 0.25;
+    public static double DEPO_HEADING_RESET = 0;
 
     public static double CRATER_LANDER_DEPOSIT = Math.PI * 1.75;
     public static double CRATER_HANG = Math.PI * 0.75;
-    public static double DEPO_LANDER_DEPOSIT = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
-    public static double DEPO_HANG = CRATER_LANDER_DEPOSIT + Math.PI * 0.5;
+    public static double DEPO_LANDER_DEPOSIT = 0;
+    public static double DEPO_HANG = Math.PI * 1.75;
 
-    public static double BLOCK_TRAPPER_TRAPPING = 0.3;
+    public static double BLOCK_TRAPPER_TRAPPING = 0.4;
     public static double BLOCK_TRAPPER_PERMISSIVE = 0;
 
-    public static int MS_QUICK_REVERSE = 100;
+    public static double COUNTER_TURN_FACTOR = -0.04;
+
     public static double DIR_QUICK_REVERSE = 1;
     int timeStopReversing;
 
-    public static int TIME_MUST_HANG = 110;
-    public static int TIME_GAMEPLAY_DONE = 120;
+    public static int TIME_GAMEPLAY_DONE = 600;
 
     public ControlMapping controller;
     public boolean fieldCentric;
@@ -104,6 +106,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         headingOffset = 0;
         winchOffset = 0;
 
+
         double desiredHeading;
         ElapsedTime timeUntilLockHeading = new ElapsedTime();
 
@@ -114,8 +117,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
         wasTurningTo255 = false;
         armIsCollecting = false;
         endgameActivities = false;
-        timing = false;
-        timeStopReversing = -1;
+        timeStopReversing = 1;
 
         winch = new HoldingPIDMotor(robot.winch, 1);
 
@@ -161,8 +163,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             // We will have a hierarchical set of colors
             // Here is the default color
-            robot.ledRiver.setMode(LEDRiver.Mode.PATTERN)
-                    .setPattern(LEDRiver.Pattern.BREATHING.builder())
+            robot.ledRiver.setMode(LEDRiver.Mode.SOLID)
                     .setColor(Color.RED);
 
             // For macro move up and down, perform shortcuts
@@ -233,8 +234,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
             }
 
             if (armIsCollecting) {
-                robot.ledRiver.setPattern(LEDRiver.Pattern.BREATHING.builder())
-                        .setColor(Color.BLUE);
+                robot.ledRiver.setColor(Color.BLUE);
             }
 
             if (controller.openLatch()) {
@@ -268,11 +268,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (controller.quickReverse()) {
                 robot.intake.setIntakeSpeed(Intake.MAX_INTAKE_SPEED * DIR_QUICK_REVERSE);
-                timeStopReversing = (int) timeSinceMatchStart.milliseconds() + MS_QUICK_REVERSE;
-
-            }
-
-            if (timeSinceMatchStart.milliseconds() > timeStopReversing) {
+            } else {
                 robot.intake.setIntakeSpeed(controller.getSpinSpeed());
             }
 
@@ -284,7 +280,11 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             // Control linear slide extend retract and drive robot if necessary
             double slidePower = controller.getExtendSpeed();
-            extender.setPower(slidePower);
+            if (Math.abs(controller.armSpeed()) > 0.05 && robot.linearSlide.getMode() == DcMotor.RunMode.RUN_USING_ENCODER) {
+                extender.setPower(slidePower + controller.armSpeed() * COUNTER_TURN_FACTOR);
+            } else {
+                extender.setPower(slidePower);
+            }
 
             if (
                     ((extender.minExtend() && slidePower < 0) ||
@@ -302,8 +302,11 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             if (controller.resetHeading()) {
                 // If we reset, reset to crater centric controls
-                headingOffset = robot.getHeading() + HEADING_RESET_POSITION;
-                hangOnCrater = true;
+                if (hangOnCrater) {
+                    headingOffset = robot.getHeading() + CRATER_HEADING_RESET;
+                } else {
+                    headingOffset = robot.getHeading() + DEPO_HEADING_RESET;
+                }
             }
             // Control heading locking
             if (controller.lockTo45() || controller.lockTo225()) {
@@ -337,26 +340,28 @@ public abstract class BaseTeleOp extends LinearOpMode {
 
             robot.setMotorSpeeds(speeds.getDrivePowers());
 
-            if (timing) {
-                if (timeSinceMatchStart.seconds() > TIME_GAMEPLAY_DONE) {
-                    robot.ledRiver.setPattern(LEDRiver.Pattern.BREATHING.builder())
-                            .setColor(Color.WHITE);
-                } else if (timeSinceMatchStart.seconds() > TIME_MUST_HANG) {
-                    robot.ledRiver.setPattern(LEDRiver.Pattern.RUNNING.builder())
-                            .setColor(Color.RED);
-                }
-            }
-
             // Set LEDs
             if (!robot.onRawChassis) {
+                double extendCurrent = leftHubEx.getMotorCurrentDraw(2);
+
                 double servoCurrent = leftHubEx.getServoBusCurrentDraw() +
                         rightHubEx.getServoBusCurrentDraw();
+
                 if (servoCurrent > SERVO_CURRENT_THRESHOLD) {
-                    robot.ledRiver.setPattern(LEDRiver.Pattern.STROBE.builder())
-                            .setColor(Color.WHITE);
+                    //robot.ledRiver.setColor(Color.WHITE);
+                } else if (extendCurrent > EXTEND_CURRENT_THRESHOLD) {
+                    robot.ledRiver.setColor(Color.GREEN);
                 }
 
+                telemetry.addData("Extend current", extendCurrent);
                 telemetry.addData("Servo current", servoCurrent);
+            }
+
+            if (timing) {
+                if (timeSinceMatchStart.seconds() > TIME_GAMEPLAY_DONE) {
+                    robot.ledRiver.setMode(LEDRiver.Mode.PATTERN)
+                            .setPattern(LEDRiver.Pattern.COLOR_WHEEL.builder());
+                }
             }
             robot.ledRiver.apply();
 
@@ -366,7 +371,7 @@ public abstract class BaseTeleOp extends LinearOpMode {
             telemetry.addData("Arm position", pos);
             telemetry.addData("Drive stick y", controller.driveStickY());
             telemetry.addData("Drive stick actual y", gamepad1.left_stick_y);
-            telemetry.addData("Extender position", robot.linearSlide.getCurrentPosition());
+            telemetry.addData("Extender position", extender.getPosition());
             telemetry.addData("Mag switch", robot.slideSwitch.getState());
 
             telemetry.addData("Winch pos", robot.winch.getCurrentPosition());
